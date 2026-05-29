@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="de" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#f7f4ef"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="PillPlan"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon.png"/>
+<title>PillPlan 1.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --cream:#f7f4ef;--cream2:#f0ebe2;--ink:#1a1612;--ink2:#4a4540;--ink3:#8a8480;
+  --teal:#2a7c74;--teal2:#3a9e94;--teal-bg:#e8f4f3;
+  --red:#c0392b;--red-bg:#fdf0ee;--gold:#b08d57;--gold-bg:#fdf8f0;
+  --r:18px;--r2:24px;--shadow:0 2px 16px rgba(26,22,18,.08);
+}
+html{font-size:16px;background:var(--cream)}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}
+button{cursor:pointer;font-family:inherit;border:none;outline:none}
+input{font-family:inherit;outline:none}
+[dir="rtl"] .header-row,[dir="rtl"] .progress-card,[dir="rtl"] .dose-card,
+[dir="rtl"] .settings-row,[dir="rtl"] .plan-med-header,[dir="rtl"] .next-banner,
+[dir="rtl"] .streak-row,[dir="rtl"] .qr-row,[dir="rtl"] .time-fields{flex-direction:row-reverse}
+[dir="rtl"] .dose-name,[dir="rtl"] .section-label,[dir="rtl"] .form-label,
+[dir="rtl"] .settings-row-label{text-align:right}
+[dir="rtl"] .form-input{text-align:right;direction:rtl}
+#app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-10px);background:var(--teal);color:#fff;padding:12px 28px;border-radius:100px;font-size:15px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(42,124,116,.35);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.header{padding:calc(env(safe-area-inset-top) + 24px) 20px 0;background:var(--cream);position:sticky;top:0;z-index:50}
+.header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.logo{font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--teal);letter-spacing:-.5px}
+.logo span{color:var(--gold)}
+.date-chip{background:var(--cream2);border-radius:100px;padding:6px 14px;font-size:13px;color:var(--ink2);font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.progress-card{background:linear-gradient(135deg,var(--teal) 0%,#1d5c56 100%);border-radius:var(--r2);padding:22px 24px;margin:0 20px 16px;color:#fff;display:flex;align-items:center;gap:20px;box-shadow:0 8px 32px rgba(42,124,116,.3);position:relative;overflow:hidden}
+.progress-card::before{content:'';position:absolute;top:-30px;right:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.06)}
+.ring-wrap{position:relative;width:72px;height:72px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-track{fill:none;stroke:rgba(255,255,255,.2);stroke-width:6}
+.ring-fill{fill:none;stroke:#fff;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)}
+.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.progress-info{flex:1}
+.progress-title{font-family:'Fraunces',serif;font-size:18px;font-weight:700;margin-bottom:4px}
+.progress-sub{font-size:13px;opacity:.75;margin-bottom:12px}
+.streak-row{display:flex;align-items:center;gap:6px}
+.streak-badge{background:rgba(255,255,255,.15);border-radius:100px;padding:4px 12px;font-size:13px;font-weight:600}
+.period-selector{display:flex;gap:6px;padding:0 20px 12px;flex-wrap:nowrap}
+.period-btn{flex:1;padding:8px 4px;border-radius:12px;border:2px solid var(--cream2);background:#fff;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;transition:all .2s;text-align:center;font-family:inherit}
+.period-btn.active{background:var(--teal);color:#fff;border-color:var(--teal);box-shadow:0 4px 12px rgba(42,124,116,.25)}
+.tabs{display:flex;gap:6px;padding:0 20px 16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:9px 18px;border-radius:100px;font-size:14px;font-weight:600;background:var(--cream2);color:var(--ink2);transition:all .2s;border:2px solid transparent}
+.tab.active{background:var(--teal);color:#fff;box-shadow:0 4px 14px rgba(42,124,116,.3)}
+.content{padding:0 20px;flex:1}
+.section-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin:4px 0 12px}
+.dose-card{background:#fff;border-radius:var(--r2);padding:18px 20px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;border:2px solid transparent;transition:all .25s}
+.dose-card.done{background:var(--teal-bg);border-color:rgba(42,124,116,.2)}
+.dose-card.overdue{border-color:rgba(192,57,43,.2);background:var(--red-bg)}
+.dose-icon{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.dose-body{flex:1;min-width:0}
+.dose-name{font-weight:700;font-size:16px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dose-time{font-size:13px;color:var(--ink2)}
+.dose-status{font-size:12px;font-weight:600;margin-top:4px}
+.dose-status.done{color:var(--teal)}
+.dose-status.pending{color:var(--ink3)}
+.dose-status.overdue{color:var(--red)}
+.check-btn{width:48px;height:48px;border-radius:16px;flex-shrink:0;font-size:22px;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.check-btn-off{background:var(--cream2);color:var(--ink3)}
+.check-btn-on{background:var(--teal);color:#fff;box-shadow:0 4px 14px rgba(42,124,116,.35)}
+.next-banner{background:var(--gold-bg);border:1.5px solid rgba(176,141,87,.3);border-radius:var(--r);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.next-banner-text{font-size:14px;font-weight:600;color:var(--gold)}
+.next-banner-sub{font-size:13px;color:var(--ink2);margin-top:2px}
+.mhd-banner{background:#fff8ee;border:1.5px solid rgba(176,100,30,.25);border-radius:var(--r);padding:14px 18px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px}
+.mhd-text{font-size:13px;color:var(--ink2);line-height:1.5}
+.disclaimer{background:var(--teal-bg);border:1.5px solid rgba(42,124,116,.2);border-radius:var(--r);padding:14px 18px;margin:14px 0 8px;display:flex;align-items:flex-start;gap:10px}
+.disclaimer-text{font-size:13px;color:var(--ink2);line-height:1.55}
+.all-done{text-align:center;padding:20px 0 8px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+.all-done-icon{font-size:48px;margin-bottom:8px}
+.all-done-text{font-family:'Fraunces',serif;font-size:22px;color:var(--teal)}
+.all-done-sub{font-size:14px;color:var(--ink3);margin-top:4px}
+.empty{text-align:center;padding:48px 0}
+.empty-icon{font-size:52px;margin-bottom:16px}
+.empty-text{font-size:16px;color:var(--ink2);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--ink3);margin-bottom:24px}
+.plan-med{margin-bottom:24px}
+.plan-med-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.plan-med-name{font-weight:700;font-size:16px;display:flex;align-items:center;gap:10px}
+.color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.plan-med-time{font-size:12px;color:var(--ink3)}
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.day-cell{aspect-ratio:1;border-radius:12px;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;transition:all .18s;background:var(--cream2)}
+.day-cell.today{border-color:var(--teal)}
+.day-cell.done{background:var(--teal)}
+.day-cell.partial{background:var(--teal-bg);border-color:var(--teal)}
+.day-cell.past{opacity:.5}
+.day-wd{font-size:8px;font-weight:700;text-transform:uppercase;opacity:.7}
+.day-num{font-size:13px;font-weight:800}
+.day-ico{font-size:9px}
+.day-cell.done .day-wd,.day-cell.done .day-num,.day-cell.done .day-ico{color:#fff}
+.plan-divider{height:1px;background:var(--cream2);margin:20px 0}
+.qr-banner{background:var(--teal-bg);border:1.5px solid rgba(42,124,116,.25);border-radius:var(--r);padding:16px;margin-bottom:20px}
+.qr-banner-title{font-size:14px;font-weight:700;color:var(--teal);margin-bottom:10px}
+.qr-row{display:flex;gap:8px}
+.form-label{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);display:block;margin:20px 0 8px}
+.form-input{width:100%;background:#fff;border:2px solid var(--cream2);border-radius:var(--r);padding:15px 18px;font-size:16px;color:var(--ink);transition:border-color .2s}
+.form-input:focus{border-color:var(--teal)}
+.form-input::placeholder{color:#bbb}
+.time-fields{display:flex;gap:10px;flex-wrap:wrap}
+.time-field{flex:1;min-width:120px}
+.time-optional{font-size:11px;color:var(--ink3);margin-top:4px}
+.colors-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.color-btn{width:38px;height:38px;border-radius:50%;border:3px solid transparent;transition:all .15s}
+.color-btn.sel{border-color:var(--ink);transform:scale(1.15)}
+.preview-card{background:#fff;border:2px solid var(--cream2);border-radius:var(--r);padding:14px 18px;margin:18px 0 4px;display:flex;align-items:center;gap:12px}
+.btn-primary{width:100%;background:var(--teal);color:#fff;border-radius:var(--r);padding:17px;font-size:16px;font-weight:700;margin-top:22px;box-shadow:0 8px 24px rgba(42,124,116,.3);transition:all .2s}
+.btn-primary:active{transform:scale(.98)}
+.btn-secondary{width:100%;background:var(--cream2);color:var(--ink2);border-radius:var(--r);padding:14px;font-size:15px;font-weight:600;margin-top:10px;cursor:pointer;font-family:inherit}
+.qr-apply-btn{background:var(--teal);color:#fff;border-radius:12px;padding:0 18px;font-size:14px;font-weight:700;flex-shrink:0}
+.voice-btn{width:48px;height:48px;border-radius:14px;background:var(--cream2);color:var(--ink2);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;border:2px solid transparent;cursor:pointer}
+.qr-scanner-wrap{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.qr-scanner-wrap video{width:min(90vw,380px);height:min(90vw,380px);object-fit:cover;border-radius:20px;border:3px solid var(--teal)}
+.qr-scanner-frame{position:relative;width:min(90vw,380px);height:min(90vw,380px)}
+.qr-scanner-frame video{width:100%;height:100%;object-fit:cover;border-radius:20px;border:3px solid var(--teal)}
+.qr-corner{position:absolute;width:32px;height:32px;border-color:var(--teal2);border-style:solid}
+.qr-corner.tl{top:8px;left:8px;border-width:4px 0 0 4px;border-radius:6px 0 0 0}
+.qr-corner.tr{top:8px;right:8px;border-width:4px 4px 0 0;border-radius:0 6px 0 0}
+.qr-corner.bl{bottom:8px;left:8px;border-width:0 0 4px 4px;border-radius:0 0 0 6px}
+.qr-corner.br{bottom:8px;right:8px;border-width:0 4px 4px 0;border-radius:0 0 6px 0}
+.qr-hint{color:#fff;font-size:15px;font-weight:600;text-align:center;max-width:320px;line-height:1.5}
+.qr-close-btn{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:14px;padding:13px 32px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.voice-btn.listening{background:var(--red);color:#fff;animation:pulse 1s infinite}
+.voice-btn.unsupported{opacity:.35;cursor:not-allowed}
+.print-btn{width:100%;background:#fff;border:1.5px solid var(--cream2);border-radius:var(--r);padding:14px;font-size:15px;font-weight:600;color:var(--ink2);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-family:inherit;transition:all .2s}
+.edit-btn{background:var(--teal-bg);color:var(--teal);border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid rgba(42,124,116,.2)}
+.share-btn{width:100%;background:var(--teal-bg);border:1.5px solid rgba(42,124,116,.25);border-radius:var(--r);padding:14px;font-size:15px;font-weight:700;color:var(--teal);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-family:inherit;transition:all .2s}
+.share-options{display:none;flex-direction:column;gap:8px;margin-top:10px}
+.share-options.open{display:flex}
+.share-option{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:var(--r);background:#fff;border:1.5px solid var(--cream2);font-size:14px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:inherit;width:100%;text-align:left}
+.settings-section{margin-bottom:28px}
+.settings-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.settings-card{background:#fff;border-radius:var(--r2);overflow:hidden;box-shadow:var(--shadow)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--cream2)}
+.settings-row:last-child{border-bottom:none}
+.settings-row-label{font-size:15px;font-weight:600}
+.settings-row-sub{font-size:12px;color:var(--ink3);margin-top:2px}
+.settings-action{background:var(--teal-bg);color:var(--teal);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.settings-action.danger{background:var(--red-bg);color:var(--red)}
+.lang-grid{display:flex;flex-wrap:wrap;gap:8px;padding:16px 20px}
+.lang-btn{padding:8px 14px;border-radius:12px;font-size:13px;font-weight:600;transition:all .15s;cursor:pointer;font-family:inherit;border:none}
+.lang-btn.sel{background:var(--teal);color:#fff}
+.lang-btn:not(.sel){background:var(--cream2);color:var(--ink2)}
+.install-card{background:linear-gradient(135deg,var(--teal-bg),var(--gold-bg));border:1.5px solid rgba(42,124,116,.2);border-radius:var(--r2);padding:20px;margin-bottom:20px}
+.install-card-title{font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--teal);margin-bottom:6px}
+.install-card-text{font-size:14px;color:var(--ink2);margin-bottom:16px;line-height:1.5}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(247,244,239,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(26,22,18,.07);display:flex;padding:10px 0 calc(10px + env(safe-area-inset-bottom));z-index:100}
+.nav-btn{flex:1;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;color:var(--ink3);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;transition:color .2s;cursor:pointer;border:none;font-family:inherit}
+.nav-btn.active{color:var(--teal)}
+.nav-icon{font-size:22px;line-height:1}
+@keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes slideUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.anim-up{animation:slideUp .35s cubic-bezier(.4,0,.2,1) both}
+input[type="time"]::-webkit-calendar-picker-indicator{opacity:.5}
+@media print{
+  .header,.bottom-nav,.tabs,.period-selector,.check-btn,.next-banner,.print-btn,.share-btn,.share-options,.disclaimer,.bottom-nav{display:none!important}
+  body{background:#fff;color:#000}
+  .dose-card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+var LANGS = {
+  de:{flag:"🇩🇪",name:"Deutsch",dir:"ltr",locale:"de-DE"},
+  en:{flag:"🇬🇧",name:"English",dir:"ltr",locale:"en-GB"},
+  fr:{flag:"🇫🇷",name:"Français",dir:"ltr",locale:"fr-FR"},
+  es:{flag:"🇪🇸",name:"Español",dir:"ltr",locale:"es-ES"},
+  it:{flag:"🇮🇹",name:"Italiano",dir:"ltr",locale:"it-IT"},
+  tr:{flag:"🇹🇷",name:"Türkçe",dir:"ltr",locale:"tr-TR"},
+  ar:{flag:"🇸🇦",name:"العربية",dir:"rtl",locale:"ar-SA"},
+  ru:{flag:"🇷🇺",name:"Русский",dir:"ltr",locale:"ru-RU"},
+  pt:{flag:"🇧🇷",name:"Português",dir:"ltr",locale:"pt-BR"}
+};
+var T = {
+  de:{today:"Heute",plan:"Plan",add:"Hinzufügen",settings:"Einstellungen",
+    noMeds:"Noch keine Medikamente",noMedsSub:"Tippen Sie auf »Hinzufügen«.",
+    addFirst:"Erstes Medikament",allDone:"Alles erledigt!",allDoneSub:"Alle Einnahmen heute bestätigt.",
+    nextDose:"Nächste Einnahme",taken:"✓ Einnahme bestätigt",doses:"Einnahmen",compliance:"Heute",
+    medName:"Medikament *",medPlaceholder:"z.B. Metformin 500 mg",
+    time1:"Uhrzeit 1. Einnahme",time2:"2. Einnahme (optional)",
+    color:"Farbe",preview:"Vorschau",save:"💊 Speichern",
+    nameRequired:"Bitte Namen eingeben",remove:"Entfernen",removed:"Entfernt",
+    qrTitle:"Per QR / Text eingeben",qrPlaceholder:"Namen eingeben…",qrApply:"OK",qrApplied:"Übernommen",
+    notifOn:"Erinnerungen aktiv 🔔",notifAllow:"Erinnerungen aktivieren",
+    notifDenied:"Bitte in Browser-Einstellungen erlauben.",notifTest:"Test senden",
+    installTitle:"App installieren",installText:"Ohne App Store – direkt auf dem Startbildschirm.",
+    installBtn:"Jetzt installieren",installIos:"Teilen → »Zum Home-Bildschirm«",
+    streak:"Tage in Folge",lang:"Sprache",
+    resetAll:"Alle Daten löschen",resetConfirm:"Wirklich alle Daten löschen?",
+    saved:"Gespeichert ✓",qrScanBtn:"📷 QR scannen",qrScanHint:"Kamera auf den QR-Code/Barcode der Packung richten",qrScanClose:"Abbrechen",qrScanSuccess:"✓ Präparat erkannt",qrScanError:"Kein QR-Code gefunden – bitte manuell eingeben",overdue:"Verpasst",pending:"Ausstehend",done:"Eingenommen",
+    statsTitle:"Statistik",total14:"Compliance",totalDoses:"Gesamt",
+    mhdTitle:"Haltbarkeitsdatum",mhdText:"Bitte prüfen Sie regelmäßig das Mindesthaltbarkeitsdatum Ihrer Medikamente.",
+    disclaimer:"Diese App ersetzt keine ärztliche Beratung. Bitte halten Sie sich an die Vorgaben Ihrer Ärztin / Ihres Arztes und/oder Ihrer Apotheke.",
+    printBtn:"🖨 Plan drucken",shareBtn:"📤 Übersicht teilen",
+    shareTitle:"Mein Medikamentenplan",shareText:"Mein Medikamentenplan (PillPlan):",shareCopied:"Kopiert ✓",
+    period1W:"1 Woche",period2W:"2 Wochen",period3W:"3 Wochen",period1M:"1 Monat",periodLabel:"Zeitraum",
+    voiceListen:"Sprechen Sie jetzt…",voiceNoSupport:"Spracheingabe nicht verfügbar",voiceDone:"✓ Erkannt"},
+  en:{today:"Today",plan:"Plan",add:"Add",settings:"Settings",
+    noMeds:"No medications yet",noMedsSub:"Tap »Add« to get started.",
+    addFirst:"Add medication",allDone:"All done!",allDoneSub:"All doses confirmed.",
+    nextDose:"Next dose",taken:"✓ Dose confirmed",doses:"doses",compliance:"Today",
+    medName:"Medication *",medPlaceholder:"e.g. Metformin 500 mg",
+    time1:"Time 1st dose",time2:"2nd dose (optional)",
+    color:"Color",preview:"Preview",save:"💊 Save",
+    nameRequired:"Please enter a name",remove:"Remove",removed:"Removed",
+    qrTitle:"Enter via QR / text",qrPlaceholder:"Enter name…",qrApply:"OK",qrApplied:"Applied",
+    notifOn:"Reminders active 🔔",notifAllow:"Enable reminders",
+    notifDenied:"Please allow in browser settings.",notifTest:"Send test",
+    installTitle:"Install App",installText:"No App Store needed.",
+    installBtn:"Install now",installIos:"Share → »Add to Home Screen«",
+    streak:"day streak",lang:"Language",
+    resetAll:"Delete all data",resetConfirm:"Really delete all data?",
+    saved:"Saved ✓",qrScanBtn:"📷 Scan QR",qrScanHint:"Point camera at QR code or barcode on packaging",qrScanClose:"Cancel",qrScanSuccess:"✓ Medication detected",qrScanError:"No QR code found – please enter manually",overdue:"Overdue",pending:"Pending",done:"Taken",
+    statsTitle:"Statistics",total14:"Compliance",totalDoses:"Total",
+    mhdTitle:"Expiry date",mhdText:"Please regularly check the expiry date of your medications.",
+    disclaimer:"This app does not replace medical advice. Please follow the instructions of your doctor and/or pharmacist.",
+    printBtn:"🖨 Print plan",shareBtn:"📤 Share overview",
+    shareTitle:"My medication plan",shareText:"My medication plan (PillPlan):",shareCopied:"Copied ✓",
+    period1W:"1 Week",period2W:"2 Weeks",period3W:"3 Weeks",period1M:"1 Month",periodLabel:"Period",
+    voiceListen:"Speak now…",voiceNoSupport:"Voice not supported",voiceDone:"✓ Recognized"},
+  fr:{today:"Aujourd'hui",plan:"Plan",add:"Ajouter",settings:"Paramètres",
+    noMeds:"Aucun médicament",noMedsSub:"Appuyez sur »Ajouter«.",
+    addFirst:"Ajouter",allDone:"Tout fait!",allDoneSub:"Toutes les prises confirmées.",
+    nextDose:"Prochaine prise",taken:"✓ Prise confirmée",doses:"prises",compliance:"Aujourd'hui",
+    medName:"Médicament *",medPlaceholder:"ex. Metformine 500 mg",
+    time1:"Heure 1ère prise",time2:"2ème prise (optionnel)",
+    color:"Couleur",preview:"Aperçu",save:"💊 Enregistrer",
+    nameRequired:"Veuillez entrer un nom",remove:"Supprimer",removed:"Supprimé",
+    qrTitle:"Entrer via QR / texte",qrPlaceholder:"Entrer le nom…",qrApply:"OK",qrApplied:"Appliqué",
+    notifOn:"Rappels actifs 🔔",notifAllow:"Activer les rappels",
+    notifDenied:"Autoriser dans les paramètres.",notifTest:"Test",
+    installTitle:"Installer",installText:"Sans App Store.",
+    installBtn:"Installer",installIos:"Partager → »Sur l'écran d'accueil«",
+    streak:"jours consécutifs",lang:"Langue",
+    resetAll:"Supprimer tout",resetConfirm:"Vraiment tout supprimer?",
+    saved:"Enregistré ✓",qrScanBtn:"📷 Scanner QR",qrScanHint:"Pointer la caméra sur le code QR ou code-barres",qrScanClose:"Annuler",qrScanSuccess:"✓ Médicament détecté",qrScanError:"Aucun QR trouvé – saisir manuellement",overdue:"En retard",pending:"En attente",done:"Pris",
+    statsTitle:"Statistiques",total14:"Observance",totalDoses:"Total",
+    mhdTitle:"Date de péremption",mhdText:"Veuillez vérifier régulièrement la date de péremption de vos médicaments.",
+    disclaimer:"Cette application ne remplace pas un avis médical. Suivez les recommandations de votre médecin et pharmacien.",
+    printBtn:"🖨 Imprimer",shareBtn:"📤 Partager",
+    shareTitle:"Mon plan de médication",shareText:"Mon plan (PillPlan):",shareCopied:"Copié ✓",
+    period1W:"1 Semaine",period2W:"2 Semaines",period3W:"3 Semaines",period1M:"1 Mois",periodLabel:"Période",
+    voiceListen:"Parlez maintenant…",voiceNoSupport:"Voix non disponible",voiceDone:"✓ Reconnu"},
+  es:{today:"Hoy",plan:"Plan",add:"Añadir",settings:"Ajustes",
+    noMeds:"Sin medicamentos",noMedsSub:"Toca »Añadir«.",
+    addFirst:"Añadir",allDone:"¡Todo listo!",allDoneSub:"Todas las tomas confirmadas.",
+    nextDose:"Próxima toma",taken:"✓ Toma confirmada",doses:"tomas",compliance:"Hoy",
+    medName:"Medicamento *",medPlaceholder:"ej. Metformina 500 mg",
+    time1:"Hora 1ª toma",time2:"2ª toma (opcional)",
+    color:"Color",preview:"Vista previa",save:"💊 Guardar",
+    nameRequired:"Ingrese un nombre",remove:"Eliminar",removed:"Eliminado",
+    qrTitle:"Ingresar vía QR / texto",qrPlaceholder:"Ingrese el nombre…",qrApply:"OK",qrApplied:"Aplicado",
+    notifOn:"Recordatorios activos 🔔",notifAllow:"Activar recordatorios",
+    notifDenied:"Permitir en configuración.",notifTest:"Enviar prueba",
+    installTitle:"Instalar",installText:"Sin App Store.",
+    installBtn:"Instalar",installIos:"Compartir → »Agregar a inicio«",
+    streak:"días seguidos",lang:"Idioma",
+    resetAll:"Eliminar todo",resetConfirm:"¿Eliminar todos los datos?",
+    saved:"Guardado ✓",qrScanBtn:"📷 Escanear QR",qrScanHint:"Apuntar la cámara al código QR o código de barras",qrScanClose:"Cancelar",qrScanSuccess:"✓ Medicamento detectado",qrScanError:"No se encontró QR – ingresar manualmente",overdue:"Atrasado",pending:"Pendiente",done:"Tomado",
+    statsTitle:"Estadísticas",total14:"Adherencia",totalDoses:"Total",
+    mhdTitle:"Fecha de caducidad",mhdText:"Por favor, compruebe regularmente la fecha de caducidad de sus medicamentos.",
+    disclaimer:"Esta aplicación no reemplaza el consejo médico. Siga las indicaciones de su médico y farmacéutico.",
+    printBtn:"🖨 Imprimir",shareBtn:"📤 Compartir",
+    shareTitle:"Mi plan de medicación",shareText:"Mi plan (PillPlan):",shareCopied:"Copiado ✓",
+    period1W:"1 Semana",period2W:"2 Semanas",period3W:"3 Semanas",period1M:"1 Mes",periodLabel:"Período",
+    voiceListen:"Hable ahora…",voiceNoSupport:"Voz no disponible",voiceDone:"✓ Reconocido"},
+  it:{today:"Oggi",plan:"Piano",add:"Aggiungi",settings:"Impostazioni",
+    noMeds:"Nessun farmaco",noMedsSub:"Tocca »Aggiungi«.",
+    addFirst:"Aggiungi",allDone:"Tutto fatto!",allDoneSub:"Tutte le assunzioni confermate.",
+    nextDose:"Prossima assunzione",taken:"✓ Assunzione confermata",doses:"assunzioni",compliance:"Oggi",
+    medName:"Farmaco *",medPlaceholder:"es. Metformina 500 mg",
+    time1:"Orario 1ª dose",time2:"2ª dose (opzionale)",
+    color:"Colore",preview:"Anteprima",save:"💊 Salva",
+    nameRequired:"Inserire un nome",remove:"Rimuovi",removed:"Rimosso",
+    qrTitle:"Inserisci via QR / testo",qrPlaceholder:"Inserisci nome…",qrApply:"OK",qrApplied:"Applicato",
+    notifOn:"Promemoria attivi 🔔",notifAllow:"Attiva promemoria",
+    notifDenied:"Consentire nelle impostazioni.",notifTest:"Test",
+    installTitle:"Installa",installText:"Senza App Store.",
+    installBtn:"Installa",installIos:"Condividi → »Aggiungi a Home«",
+    streak:"giorni consecutivi",lang:"Lingua",
+    resetAll:"Elimina tutto",resetConfirm:"Eliminare tutti i dati?",
+    saved:"Salvato ✓",qrScanBtn:"📷 Scansiona QR",qrScanHint:"Puntare la fotocamera sul codice QR o codice a barre",qrScanClose:"Annulla",qrScanSuccess:"✓ Farmaco rilevato",qrScanError:"Nessun QR trovato – inserire manualmente",overdue:"In ritardo",pending:"In attesa",done:"Assunto",
+    statsTitle:"Statistiche",total14:"Aderenza",totalDoses:"Totale",
+    mhdTitle:"Data di scadenza",mhdText:"Si prega di controllare regolarmente la data di scadenza dei propri farmaci.",
+    disclaimer:"Questa app non sostituisce il consulto medico. Seguire le indicazioni del medico e del farmacista.",
+    printBtn:"🖨 Stampa",shareBtn:"📤 Condividi",
+    shareTitle:"Il mio piano farmaci",shareText:"Il mio piano (PillPlan):",shareCopied:"Copiato ✓",
+    period1W:"1 Settimana",period2W:"2 Settimane",period3W:"3 Settimane",period1M:"1 Mese",periodLabel:"Periodo",
+    voiceListen:"Parla ora…",voiceNoSupport:"Voce non disponibile",voiceDone:"✓ Riconosciuto"},
+  tr:{today:"Bugün",plan:"Plan",add:"Ekle",settings:"Ayarlar",
+    noMeds:"Henüz ilaç yok",noMedsSub:"»Ekle«ye dokunun.",
+    addFirst:"İlaç ekle",allDone:"Hepsi tamam!",allDoneSub:"Bugünkü tüm dozlar onaylandı.",
+    nextDose:"Sonraki doz",taken:"✓ Doz onaylandı",doses:"doz",compliance:"Bugün",
+    medName:"İlaç *",medPlaceholder:"örn. Metformin 500 mg",
+    time1:"1. doz saati",time2:"2. doz (isteğe bağlı)",
+    color:"Renk",preview:"Önizleme",save:"💊 Kaydet",
+    nameRequired:"Lütfen isim girin",remove:"Kaldır",removed:"Kaldırıldı",
+    qrTitle:"QR / metin ile girin",qrPlaceholder:"İsim girin…",qrApply:"Tamam",qrApplied:"Uygulandı",
+    notifOn:"Hatırlatıcılar aktif 🔔",notifAllow:"Hatırlatıcıları etkinleştir",
+    notifDenied:"Tarayıcı ayarlarından izin verin.",notifTest:"Test gönder",
+    installTitle:"Yükle",installText:"App Store olmadan.",
+    installBtn:"Yükle",installIos:"Paylaş → »Ana Ekrana Ekle«",
+    streak:"gün üst üste",lang:"Dil",
+    resetAll:"Tüm verileri sil",resetConfirm:"Tüm veriler silinsin mi?",
+    saved:"Kaydedildi ✓",qrScanBtn:"📷 QR Tara",qrScanHint:"Kamerayı QR kod veya barkoda doğrultun",qrScanClose:"İptal",qrScanSuccess:"✓ İlaç tespit edildi",qrScanError:"QR bulunamadı – manuel girin",overdue:"Gecikmiş",pending:"Bekliyor",done:"Alındı",
+    statsTitle:"İstatistikler",total14:"Uyum",totalDoses:"Toplam",
+    mhdTitle:"Son kullanma tarihi",mhdText:"Lütfen ilaçlarınızın son kullanma tarihini düzenli olarak kontrol edin.",
+    disclaimer:"Bu uygulama tıbbi tavsiyenin yerini tutmaz. Doktorunuzun ve eczacınızın talimatlarına uyun.",
+    printBtn:"🖨 Yazdır",shareBtn:"📤 Paylaş",
+    shareTitle:"İlaç planım",shareText:"İlaç planım (PillPlan):",shareCopied:"Kopyalandı ✓",
+    period1W:"1 Hafta",period2W:"2 Hafta",period3W:"3 Hafta",period1M:"1 Ay",periodLabel:"Süre",
+    voiceListen:"Şimdi konuşun…",voiceNoSupport:"Ses desteklenmiyor",voiceDone:"✓ Tanındı"},
+  ar:{today:"اليوم",plan:"خطة",add:"إضافة",settings:"الإعدادات",
+    noMeds:"لا توجد أدوية",noMedsSub:"اضغط »إضافة« للبدء.",
+    addFirst:"إضافة دواء",allDone:"تم كل شيء!",allDoneSub:"تم تأكيد جميع الجرعات.",
+    nextDose:"الجرعة التالية",taken:"✓ تم تأكيد الجرعة",doses:"جرعات",compliance:"اليوم",
+    medName:"الدواء *",medPlaceholder:"مثال: ميتفورمين 500 مج",
+    time1:"وقت الجرعة الأولى",time2:"الجرعة الثانية (اختياري)",
+    color:"اللون",preview:"معاينة",save:"💊 حفظ",
+    nameRequired:"الرجاء إدخال اسم",remove:"حذف",removed:"تم الحذف",
+    qrTitle:"أدخل عبر QR / نص",qrPlaceholder:"أدخل الاسم…",qrApply:"موافق",qrApplied:"تم",
+    notifOn:"التذكيرات نشطة 🔔",notifAllow:"تفعيل التذكيرات",
+    notifDenied:"يرجى السماح في إعدادات المتصفح.",notifTest:"إرسال اختبار",
+    installTitle:"تثبيت",installText:"بدون متجر تطبيقات.",
+    installBtn:"تثبيت",installIos:"مشاركة ← »إضافة إلى الشاشة الرئيسية«",
+    streak:"أيام متتالية",lang:"اللغة",
+    resetAll:"حذف البيانات",resetConfirm:"حذف جميع البيانات؟",
+    saved:"تم الحفظ ✓",qrScanBtn:"📷 مسح QR",qrScanHint:"وجّه الكاميرا نحو رمز QR أو الباركود",qrScanClose:"إلغاء",qrScanSuccess:"✓ تم اكتشاف الدواء",qrScanError:"لم يُعثر على QR – أدخل يدوياً",overdue:"متأخر",pending:"في الانتظار",done:"تم الأخذ",
+    statsTitle:"الإحصائيات",total14:"الالتزام",totalDoses:"المجموع",
+    mhdTitle:"تاريخ الانتهاء",mhdText:"يرجى التحقق بانتظام من تاريخ انتهاء صلاحية أدويتك.",
+    disclaimer:"هذا التطبيق لا يحل محل الاستشارة الطبية. يرجى اتباع تعليمات طبيبك وصيدلانيك.",
+    printBtn:"🖨 طباعة",shareBtn:"📤 مشاركة",
+    shareTitle:"خطة أدويتي",shareText:"خطة أدويتي (PillPlan):",shareCopied:"تم النسخ ✓",
+    period1W:"أسبوع",period2W:"أسبوعان",period3W:"3 أسابيع",period1M:"شهر",periodLabel:"المدة",
+    voiceListen:"تحدث الآن…",voiceNoSupport:"الصوت غير متاح",voiceDone:"✓ تم"},
+  ru:{today:"Сегодня",plan:"План",add:"Добавить",settings:"Настройки",
+    noMeds:"Нет лекарств",noMedsSub:"Нажмите »Добавить«.",
+    addFirst:"Добавить",allDone:"Всё выполнено!",allDoneSub:"Все приёмы подтверждены.",
+    nextDose:"Следующий приём",taken:"✓ Приём подтверждён",doses:"приёмов",compliance:"Сегодня",
+    medName:"Лекарство *",medPlaceholder:"напр. Метформин 500 мг",
+    time1:"Время 1-го приёма",time2:"2-й приём (необязательно)",
+    color:"Цвет",preview:"Предпросмотр",save:"💊 Сохранить",
+    nameRequired:"Введите название",remove:"Удалить",removed:"Удалено",
+    qrTitle:"Ввести через QR / текст",qrPlaceholder:"Введите название…",qrApply:"ОК",qrApplied:"Применено",
+    notifOn:"Напоминания активны 🔔",notifAllow:"Включить напоминания",
+    notifDenied:"Разрешите в настройках браузера.",notifTest:"Тест",
+    installTitle:"Установить",installText:"Без App Store.",
+    installBtn:"Установить",installIos:"Поделиться → »На экран Домой«",
+    streak:"дней подряд",lang:"Язык",
+    resetAll:"Удалить данные",resetConfirm:"Удалить все данные?",
+    saved:"Сохранено ✓",qrScanBtn:"📷 Сканировать QR",qrScanHint:"Наведите камеру на QR-код или штрихкод упаковки",qrScanClose:"Отмена",qrScanSuccess:"✓ Препарат определён",qrScanError:"QR не найден – введите вручную",overdue:"Просрочено",pending:"Ожидает",done:"Принято",
+    statsTitle:"Статистика",total14:"Соблюдение",totalDoses:"Всего",
+    mhdTitle:"Срок годности",mhdText:"Пожалуйста, регулярно проверяйте срок годности ваших лекарств.",
+    disclaimer:"Приложение не заменяет медицинскую консультацию. Следуйте указаниям врача и фармацевта.",
+    printBtn:"🖨 Печать",shareBtn:"📤 Поделиться",
+    shareTitle:"Мой план приёма",shareText:"Мой план (PillPlan):",shareCopied:"Скопировано ✓",
+    period1W:"1 Неделя",period2W:"2 Недели",period3W:"3 Недели",period1M:"1 Месяц",periodLabel:"Период",
+    voiceListen:"Говорите…",voiceNoSupport:"Голос недоступен",voiceDone:"✓ Распознано"},
+  pt:{today:"Hoje",plan:"Plano",add:"Adicionar",settings:"Configurações",
+    noMeds:"Nenhum medicamento",noMedsSub:"Toque »Adicionar«.",
+    addFirst:"Adicionar",allDone:"Tudo feito!",allDoneSub:"Todas as doses confirmadas.",
+    nextDose:"Próxima dose",taken:"✓ Dose confirmada",doses:"doses",compliance:"Hoje",
+    medName:"Medicamento *",medPlaceholder:"ex. Metformina 500 mg",
+    time1:"Horário 1ª dose",time2:"2ª dose (opcional)",
+    color:"Cor",preview:"Visualização",save:"💊 Salvar",
+    nameRequired:"Por favor insira um nome",remove:"Remover",removed:"Removido",
+    qrTitle:"Inserir via QR / texto",qrPlaceholder:"Digite o nome…",qrApply:"OK",qrApplied:"Aplicado",
+    notifOn:"Lembretes ativos 🔔",notifAllow:"Ativar lembretes",
+    notifDenied:"Permitir nas configurações.",notifTest:"Enviar teste",
+    installTitle:"Instalar",installText:"Sem App Store.",
+    installBtn:"Instalar",installIos:"Compartilhar → »Adicionar à Tela Início«",
+    streak:"dias seguidos",lang:"Idioma",
+    resetAll:"Apagar dados",resetConfirm:"Apagar todos os dados?",
+    saved:"Salvo ✓",overdue:"Atrasado",pending:"Pendente",done:"Tomado",
+    statsTitle:"Estatísticas",total14:"Adesão",totalDoses:"Total",
+    mhdTitle:"Prazo de validade",mhdText:"Por favor, verifique regularmente o prazo de validade dos seus medicamentos.",
+    disclaimer:"Este aplicativo não substitui o aconselhamento médico. Siga as orientações do seu médico e farmacêutico.",
+    printBtn:"🖨 Imprimir",shareBtn:"📤 Compartilhar",
+    shareTitle:"Meu plano de medicamentos",shareText:"Meu plano (PillPlan):",shareCopied:"Copiado ✓",
+    period1W:"1 Semana",period2W:"2 Semanas",period3W:"3 Semanas",period1M:"1 Mês",periodLabel:"Período",
+    voiceListen:"Fale agora…",voiceNoSupport:"Voz não disponível",voiceDone:"✓ Reconhecido"}
+};
+
+// ── State ──────────────────────────────────────────────────
+var KEY = "pillplan_v4";
+var S = {
+  lang: (function() {
+    var keys = Object.keys(LANGS);
+    for (var i = 0; i < keys.length; i++) {
+      if (navigator.language && navigator.language.startsWith(keys[i])) return keys[i];
+    }
+    return "de";
+  })(),
+  meds: [
+    {id:1, name:"Metformin 500 mg", times:["08:00","20:00"], color:"#2a7c74"},
+    {id:2, name:"Lisinopril 10 mg", times:["08:00"],         color:"#c0392b"}
+  ],
+  taken: {},
+  screen: "today",
+  notif: false,
+  period: 14
+};
+
+try {
+  var raw = localStorage.getItem(KEY);
+  if (raw) {
+    var saved = JSON.parse(raw);
+    S.lang   = saved.lang   || S.lang;
+    S.meds   = saved.meds   || S.meds;
+    S.taken  = saved.taken  || S.taken;
+    S.screen = saved.screen || S.screen;
+    S.notif  = saved.notif  || S.notif;
+    S.period = saved.period || S.period;
+  }
+} catch(e) {}
+
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+}
+
+// ── Helpers ────────────────────────────────────────────────
+function tr(k) {
+  var lang = T[S.lang] || T.de;
+  return lang[k] || k;
+}
+function today() { return new Date().toISOString().split("T")[0]; }
+function getDays() {
+  var days = [];
+  for (var i = 0; i < S.period; i++) {
+    var d = new Date();
+    d.setDate(d.getDate() + i);
+    days.push(d.toISOString().split("T")[0]);
+  }
+  return days;
+}
+function isDone(mid, date, time) { return !!S.taken[date + "_" + mid + "_" + time]; }
+function allDoneDay(m, d) {
+  for (var i = 0; i < m.times.length; i++) {
+    if (!isDone(m.id, d, m.times[i])) return false;
+  }
+  return true;
+}
+function todayStats() {
+  var td = today(); var tot = 0; var dn = 0;
+  for (var i = 0; i < S.meds.length; i++) {
+    var m = S.meds[i];
+    tot += m.times.length;
+    for (var j = 0; j < m.times.length; j++) {
+      if (isDone(m.id, td, m.times[j])) dn++;
+    }
+  }
+  return {tot:tot, dn:dn, pct: tot ? Math.round(dn/tot*100) : 0};
+}
+function overallStats() {
+  var days = getDays().filter(function(d){ return d <= today(); });
+  var tot = 0; var dn = 0;
+  for (var i = 0; i < S.meds.length; i++) {
+    var m = S.meds[i];
+    for (var j = 0; j < days.length; j++) {
+      tot += m.times.length;
+      for (var k = 0; k < m.times.length; k++) {
+        if (isDone(m.id, days[j], m.times[k])) dn++;
+      }
+    }
+  }
+  return {tot:tot, dn:dn, pct: tot ? Math.round(dn/tot*100) : 0};
+}
+function calcStreak() {
+  if (!S.meds.length) return 0;
+  var streak = 0;
+  var days = getDays();
+  var td = today();
+  for (var i = 0; i < days.length; i++) {
+    var d = days[i];
+    if (d > td) break;
+    if (S.meds.every(function(m){ return allDoneDay(m, d); })) streak++;
+    else if (d < td) streak = 0;
+  }
+  return streak;
+}
+function nextDose() {
+  var td = today();
+  var now = new Date();
+  var nm = now.getHours()*60 + now.getMinutes();
+  var best = null;
+  for (var i = 0; i < S.meds.length; i++) {
+    var m = S.meds[i];
+    for (var j = 0; j < m.times.length; j++) {
+      var ti = m.times[j];
+      if (isDone(m.id, td, ti)) continue;
+      var parts = ti.split(":");
+      var mins = parseInt(parts[0])*60 + parseInt(parts[1]);
+      if (mins >= nm && (!best || mins < best.mins)) best = {m:m, ti:ti, mins:mins};
+    }
+  }
+  return best;
+}
+function isOverdue(time) {
+  var now = new Date();
+  var nm = now.getHours()*60 + now.getMinutes();
+  var parts = time.split(":");
+  return parseInt(parts[0])*60 + parseInt(parts[1]) < nm;
+}
+function fmtDate(ds) {
+  var d = new Date(ds + "T00:00:00");
+  var locale = (LANGS[S.lang] && LANGS[S.lang].locale) || "de-DE";
+  try { return d.toLocaleDateString(locale, {weekday:"long",day:"numeric",month:"long"}); }
+  catch(e) { return d.toLocaleDateString("de-DE", {weekday:"long",day:"numeric",month:"long"}); }
+}
+function fmtDayShort(ds) {
+  var d = new Date(ds + "T00:00:00");
+  var locale = (LANGS[S.lang] && LANGS[S.lang].locale) || "de-DE";
+  try { return d.toLocaleDateString(locale, {weekday:"short"}).slice(0,2); }
+  catch(e) { return d.toLocaleDateString("de-DE", {weekday:"short"}).slice(0,2); }
+}
+function applyLang() {
+  var dir = (LANGS[S.lang] && LANGS[S.lang].dir) || "ltr";
+  document.documentElement.lang = S.lang;
+  document.documentElement.dir  = dir;
+}
+
+// ── Toast ──────────────────────────────────────────────────
+var toastTimer;
+function showToast(msg) {
+  var el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 2400);
+}
+
+// ── Notifications ──────────────────────────────────────────
+var ntTimers = {};
+function requestNotif() {
+  if (!("Notification" in window)) { showToast(tr("notifDenied")); return; }
+  Notification.requestPermission().then(function(p) {
+    S.notif = (p === "granted");
+    persist(); render();
+    if (S.notif) { scheduleNotifs(); showToast(tr("notifOn")); }
+    else showToast(tr("notifDenied"));
+  });
+}
+function scheduleNotifs() {
+  var keys = Object.keys(ntTimers);
+  for (var i = 0; i < keys.length; i++) clearTimeout(ntTimers[keys[i]]);
+  ntTimers = {};
+  if (!S.notif) return;
+  for (var i = 0; i < S.meds.length; i++) {
+    (function(m) {
+      for (var j = 0; j < m.times.length; j++) {
+        (function(time) {
+          var parts = time.split(":");
+          var next = new Date();
+          next.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+          if (next <= new Date()) next.setDate(next.getDate() + 1);
+          var id = setTimeout(function() {
+            new Notification("💊 PillPlan", {
+              body: (S.lang==="de" ? "Bitte denken Sie an Ihre Einnahme: " : S.lang==="ar" ? "يرجى تذكر تناول دوائك: " : "Please remember to take your medication: ") + m.name + " (" + time + ")",
+              icon: "icon.png",
+              tag: "pp-" + m.id + "-" + time
+            });
+            setTimeout(scheduleNotifs, 1000);
+          }, next - new Date());
+          ntTimers[m.id + "_" + time] = id;
+        })(m.times[j]);
+      }
+    })(S.meds[i]);
+  }
+}
+function testNotif() {
+  if (!S.notif) { requestNotif(); return; }
+  new Notification("PillPlan", {body: "OK", icon: "icon.png"});
+}
+
+// ── Install ────────────────────────────────────────────────
+var deferredInstall = null;
+window.addEventListener("beforeinstallprompt", function(e) {
+  e.preventDefault(); deferredInstall = e; render();
+});
+function installApp() {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  deferredInstall.userChoice.then(function(r) {
+    if (r.outcome === "accepted") deferredInstall = null;
+    render();
+  });
+}
+
+// ── Share ──────────────────────────────────────────────────
+function buildShareText() {
+  var td = today();
+  var days = getDays().filter(function(d){ return d <= td; });
+  var lines = [];
+  lines.push("💊 " + tr("shareTitle"));
+  lines.push("📅 " + new Date().toLocaleDateString());
+  lines.push("");
+  for (var i = 0; i < S.meds.length; i++) {
+    var m = S.meds[i];
+    var done = 0;
+    for (var j = 0; j < days.length; j++) {
+      if (allDoneDay(m, days[j])) done++;
+    }
+    var pct = days.length ? Math.round(done/days.length*100) : 0;
+    lines.push("• " + m.name + ": " + pct + "% (" + done + "/" + days.length + ")");
+    lines.push("  " + m.times.join(" · ") + " Uhr");
+  }
+  lines.push("");
+  lines.push("— PillPlan");
+  return lines.join("\n");
+}
+function doShare() {
+  var text = buildShareText();
+  var url  = window.location.href;
+  if (navigator.share) {
+    navigator.share({title: tr("shareTitle"), text: text, url: url}).catch(function(){});
+  } else {
+    var el = document.getElementById("share-options");
+    if (el) el.classList.toggle("open");
+  }
+}
+function shareVia(method) {
+  var text = buildShareText();
+  var url  = window.location.href;
+  if (method === "whatsapp") {
+    window.open("https://wa.me/?text=" + encodeURIComponent(text + "\n" + url), "_blank");
+  } else if (method === "mail") {
+    window.location.href = "mailto:?subject=" + encodeURIComponent(tr("shareTitle")) + "&body=" + encodeURIComponent(text);
+  } else if (method === "copy") {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function(){ showToast(tr("shareCopied")); });
+    } else {
+      var el = document.createElement("textarea");
+      el.value = text; document.body.appendChild(el);
+      el.select(); document.execCommand("copy");
+      document.body.removeChild(el);
+      showToast(tr("shareCopied"));
+    }
+  }
+}
+
+// ── Voice ──────────────────────────────────────────────────
+// ── QR Scanner (iOS + Android kompatibel via jsQR) ────────
+var qrStream = null;
+var qrInterval = null;
+var jsQRLoaded = false;
+
+function loadJsQR(cb) {
+  if (jsQRLoaded) { cb(); return; }
+  var s = document.createElement("script");
+  s.src = "https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js";
+  s.onload = function() { jsQRLoaded = true; cb(); };
+  s.onerror = function() { showToast(tr("qrScanError")); };
+  document.head.appendChild(s);
+}
+
+function openQRScanner() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast(tr("qrScanError")); return;
+  }
+  loadJsQR(function() {
+    var overlay = document.createElement("div");
+    overlay.className = "qr-scanner-wrap";
+    overlay.id = "qr-overlay";
+    overlay.innerHTML =
+      '<div class="qr-scanner-frame">' +
+        '<video id="qr-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;border-radius:16px"></video>' +
+        '<canvas id="qr-canvas" style="display:none"></canvas>' +
+        '<div class="qr-corner tl"></div><div class="qr-corner tr"></div>' +
+        '<div class="qr-corner bl"></div><div class="qr-corner br"></div>' +
+      '</div>' +
+      '<div class="qr-hint">' + tr("qrScanHint") + '</div>' +
+      '<button class="qr-close-btn" id="qr-close-btn">' + tr("qrScanClose") + '</button>';
+    document.body.appendChild(overlay);
+    document.getElementById("qr-close-btn").addEventListener("click", closeQRScanner);
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: 640, height: 640 } })
+      .then(function(stream) {
+        qrStream = stream;
+        var video = document.getElementById("qr-video");
+        if (!video) return;
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        video.play();
+        var canvas = document.getElementById("qr-canvas");
+        var ctx = canvas ? canvas.getContext("2d") : null;
+        qrInterval = setInterval(function() {
+          if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+          if (!canvas || !ctx) return;
+          canvas.width  = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+          if (code && code.data) {
+            closeQRScanner();
+            applyQRResult(code.data);
+          }
+        }, 300);
+      })
+      .catch(function() { closeQRScanner(); showToast(tr("qrScanError")); });
+  });
+}
+
+function closeQRScanner() {
+  clearInterval(qrInterval);
+  if (qrStream) { qrStream.getTracks().forEach(function(t) { t.stop(); }); qrStream = null; }
+  var ol = document.getElementById("qr-overlay");
+  if (ol) ol.remove();
+}
+
+function applyQRResult(val) {
+  var name = val.replace(/https?:\/\/[^ ]+/g, "").trim() || val;
+  syncF(); F.name = name;
+  var inp = document.getElementById("add-name");
+  if (inp) inp.value = name;
+  var pv = document.getElementById("add-preview");
+  var pn = document.getElementById("prev-name");
+  if (pv) pv.style.display = "block";
+  if (pn) pn.textContent = name;
+  showToast(tr("qrScanSuccess"));
+}
+
+var VOICE_LANG = {de:"de-DE",en:"en-GB",fr:"fr-FR",es:"es-ES",it:"it-IT",tr:"tr-TR",ar:"ar-SA",ru:"ru-RU",pt:"pt-BR"};
+var voiceActive = false;
+function startVoice() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast(tr("voiceNoSupport")); return; }
+  if (voiceActive) return;
+  voiceActive = true;
+  var vb = document.getElementById("voice-btn");
+  if (vb) vb.classList.add("listening");
+  showToast(tr("voiceListen"));
+  var r = new SR();
+  r.lang = VOICE_LANG[S.lang] || "de-DE";
+  r.interimResults = false;
+  r.maxAlternatives = 1;
+  r.onresult = function(e) {
+    var txt = e.results[0][0].transcript.trim();
+    var inp = document.getElementById("add-name");
+    if (inp) { inp.value = txt; syncF(); F.name = txt; }
+    var pv = document.getElementById("add-preview");
+    var pn = document.getElementById("prev-name");
+    if (pv) pv.style.display = txt ? "block" : "none";
+    if (pn) pn.textContent = txt;
+    showToast(tr("voiceDone"));
+    voiceActive = false;
+    if (vb) vb.classList.remove("listening");
+  };
+  r.onerror = function() {
+    voiceActive = false;
+    if (vb) vb.classList.remove("listening");
+    showToast(tr("voiceNoSupport"));
+  };
+  r.onend = function() {
+    voiceActive = false;
+    if (vb) vb.classList.remove("listening");
+  };
+  r.start();
+}
+
+// ── Add form ───────────────────────────────────────────────
+var F = {name:"", time1:"08:00", time2:"", time3:"", time4:"", color:"#2a7c74"};
+var COLORS = ["#2a7c74","#c0392b","#b08d57","#6c3483","#1a5276","#27ae60","#d35400","#7f8c8d"];
+
+// ── Render ─────────────────────────────────────────────────
+function render() {
+  applyLang();
+  var root = document.getElementById("app");
+  var s  = todayStats();
+  var ov = overallStats();
+  var streak = calcStreak();
+  var td = today();
+  var days14 = getDays();
+  var nd = nextDose();
+  var r = 29;
+  var circ = 2 * Math.PI * r;
+  var dash  = circ - (circ * s.pct / 100);
+  var periodLabels = {7: tr("period1W"), 14: tr("period2W"), 21: tr("period3W"), 30: tr("period1M")};
+
+  var html = '';
+  html += '<div class="header">';
+  html += '<div class="header-row">';
+  html += '<div class="logo">Pill<span>Plan</span></div>';
+  html += '<div class="date-chip">' + fmtDate(td) + '</div>';
+  html += '</div>';
+  html += '<div class="progress-card">';
+  html += '<div class="ring-wrap">';
+  html += '<svg width="72" height="72" viewBox="0 0 72 72"><circle class="ring-track" cx="36" cy="36" r="' + r + '"/>';
+  html += '<circle class="ring-fill" cx="36" cy="36" r="' + r + '" stroke-dasharray="' + circ + '" stroke-dashoffset="' + dash + '"/></svg>';
+  html += '<div class="ring-pct">' + s.pct + '%</div></div>';
+  html += '<div class="progress-info">';
+  html += '<div class="progress-title">' + tr("compliance") + '</div>';
+  html += '<div class="progress-sub">' + s.dn + ' / ' + s.tot + ' ' + tr("doses") + '</div>';
+  html += '<div class="streak-row"><div class="streak-badge">🔥 ' + streak + ' ' + tr("streak") + '</div></div>';
+  html += '</div></div>';
+  html += '<div class="period-selector">';
+  var periods = [7,14,21,30];
+  for (var pi = 0; pi < periods.length; pi++) {
+    var p = periods[pi];
+    html += '<button class="period-btn' + (S.period===p?' active':'') + '" data-period="' + p + '">' + periodLabels[p] + '</button>';
+  }
+  html += '</div>';
+  html += '<div class="tabs">';
+  var tabs = [["today","💊 "+tr("today")],["plan","📅 "+tr("plan")],["add","＋ "+tr("add")],["settings","⚙ "+tr("settings")]];
+  for (var ti2 = 0; ti2 < tabs.length; ti2++) {
+    html += '<button class="tab' + (S.screen===tabs[ti2][0]?' active':'') + '" data-nav="' + tabs[ti2][0] + '">' + tabs[ti2][1] + '</button>';
+  }
+  html += '</div></div>';
+  html += '<div class="content">';
+
+  if (S.screen === "today")    html += buildToday(s, td, nd);
+  if (S.screen === "plan")     html += buildPlan(days14, td);
+  if (S.screen === "add")      html += buildAdd();
+  if (S.screen === "settings") html += buildSettings(ov);
+
+  html += '</div>';
+  html += '<nav class="bottom-nav">';
+  var navItems = [["today","💊",tr("today")],["plan","📅",tr("plan")],["add","＋",tr("add")],["settings","⚙",tr("settings")]];
+  for (var ni = 0; ni < navItems.length; ni++) {
+    html += '<button class="nav-btn' + (S.screen===navItems[ni][0]?' active':'') + '" data-nav="' + navItems[ni][0] + '">';
+    html += '<span class="nav-icon">' + navItems[ni][1] + '</span><span>' + navItems[ni][2] + '</span></button>';
+  }
+  html += '</nav>';
+
+  root.innerHTML = html;
+  bindEvents();
+  scheduleNotifs();
+}
+
+function buildToday(s, td, nd) {
+  if (!S.meds.length) {
+    return '<div class="empty anim-up"><div class="empty-icon">💊</div><div class="empty-text">' + tr("noMeds") + '</div><div class="empty-sub">' + tr("noMedsSub") + '</div><button class="btn-primary" style="width:auto;padding:14px 32px" data-nav="add">' + tr("addFirst") + '</button></div>';
+  }
+  var allDone = true;
+  for (var i = 0; i < S.meds.length; i++) {
+    for (var j = 0; j < S.meds[i].times.length; j++) {
+      if (!isDone(S.meds[i].id, td, S.meds[i].times[j])) { allDone = false; break; }
+    }
+  }
+  var html = '';
+  html += '<div class="mhd-banner anim-up"><div style="font-size:22px;flex-shrink:0">📅</div><div class="mhd-text">' + tr("mhdText") + '</div></div>';
+  if (allDone) {
+    html += '<div class="all-done anim-up"><div class="all-done-icon">🎉</div><div class="all-done-text">' + tr("allDone") + '</div><div class="all-done-sub">' + tr("allDoneSub") + '</div></div>';
+  } else if (nd) {
+    html += '<div class="next-banner anim-up"><div style="font-size:22px">⏰</div><div><div class="next-banner-text">' + tr("nextDose") + ': ' + nd.ti + '</div><div class="next-banner-sub">' + nd.m.name + '</div></div></div>';
+  }
+  html += '<div class="section-label">' + tr("today") + '</div>';
+  var slots = [];
+  for (var i = 0; i < S.meds.length; i++) {
+    for (var j = 0; j < S.meds[i].times.length; j++) {
+      slots.push({m: S.meds[i], ti: S.meds[i].times[j]});
+    }
+  }
+  slots.sort(function(a,b){ return a.ti.localeCompare(b.ti); });
+  for (var si = 0; si < slots.length; si++) {
+    var m = slots[si].m; var ti = slots[si].ti;
+    var done = isDone(m.id, td, ti);
+    var ov = !done && isOverdue(ti);
+    html += '<div class="dose-card anim-up ' + (done?'done':ov?'overdue':'') + '" style="animation-delay:' + (si*40) + 'ms">';
+    html += '<div class="dose-icon" style="background:' + m.color + '22">' + (done?'✅':'💊') + '</div>';
+    html += '<div class="dose-body"><div class="dose-name">' + m.name + '</div>';
+    html += '<div class="dose-time">' + ti + '</div>';
+    html += '<div class="dose-status ' + (done?'done':ov?'overdue':'pending') + '">' + (done?tr("done"):ov?tr("overdue"):tr("pending")) + '</div></div>';
+    html += '<button class="check-btn ' + (done?'check-btn-on':'check-btn-off') + '" data-toggle="' + m.id + '" data-time="' + ti + '" data-date="' + td + '">' + (done?'✓':'○') + '</button>';
+    html += '</div>';
+  }
+  html += '<div class="disclaimer anim-up"><div style="font-size:18px;flex-shrink:0">ℹ️</div><div class="disclaimer-text">' + tr("disclaimer") + '</div></div>';
+  html += '<button class="print-btn" id="print-btn">🖨 ' + tr("printBtn").replace("🖨 ","") + '</button>';
+  html += '<button class="share-btn" id="share-main-btn">📤 ' + tr("shareBtn").replace("📤 ","") + '</button>';
+  html += '<div class="share-options" id="share-options">';
+  html += '<button class="share-option" id="share-wa"><span style="font-size:20px">💬</span> WhatsApp</button>';
+  html += '<button class="share-option" id="share-mail"><span style="font-size:20px">✉️</span> E-Mail</button>';
+  html += '<button class="share-option" id="share-copy"><span style="font-size:20px">📋</span> ' + (S.lang==="de"?"Kopieren":S.lang==="ar"?"نسخ":"Copy") + '</button>';
+  html += '</div>';
+  return html;
+}
+
+function buildPlan(days14, td) {
+  if (!S.meds.length) {
+    return '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">' + tr("noMeds") + '</div><button class="btn-primary" style="width:auto;padding:14px 32px;margin:0 auto;display:block" data-nav="add">' + tr("addFirst") + '</button></div>';
+  }
+  var html = '';
+  for (var mi = 0; mi < S.meds.length; mi++) {
+    var m = S.meds[mi];
+    html += '<div class="plan-med anim-up" style="animation-delay:' + (mi*60) + 'ms">';
+    html += '<div class="plan-med-header"><div>';
+    html += '<div class="plan-med-name"><div class="color-dot" style="background:' + m.color + '"></div>' + m.name + '</div>';
+    html += '<div class="plan-med-time">' + m.times.join(" · ") + '</div></div>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button class="edit-btn" data-edit="' + m.id + '">✏️ ' + (S.lang==="de"?"Bearbeiten":S.lang==="ar"?"تعديل":"Edit") + '</button>';
+    html += '<button style="background:var(--red-bg);color:var(--red);border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" data-remove="' + m.id + '">' + tr("remove") + '</button>';
+    html += '</div>';
+    html += '</div><div class="day-grid">';
+    for (var di = 0; di < days14.length; di++) {
+      var d = days14[di];
+      var done2 = allDoneDay(m, d);
+      var partial = !done2;
+      for (var k = 0; k < m.times.length; k++) {
+        if (isDone(m.id, d, m.times[k])) { partial = true; break; }
+      }
+      if (done2) partial = false;
+      var isT = (d === td); var isPast = (d < td);
+      var cls = "day-cell";
+      if (done2) cls += " done";
+      else if (partial) cls += " partial";
+      else if (isPast) cls += " past";
+      if (isT) cls += " today";
+      html += '<button class="' + cls + '" data-toggle-day="' + m.id + '" data-date="' + d + '">';
+      html += '<span class="day-wd">' + fmtDayShort(d) + '</span>';
+      html += '<span class="day-num">' + new Date(d + "T00:00:00").getDate() + '</span>';
+      html += '<span class="day-ico">' + (done2?"✓":partial?"◑":"·") + '</span>';
+      html += '</button>';
+    }
+    html += '</div></div>';
+    if (mi < S.meds.length - 1) html += '<div class="plan-divider"></div>';
+  }
+  return html;
+}
+
+function buildAdd() {
+  var vSupport = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  var html = '';
+  
+  html += '<label class="form-label">' + tr("medName") + '</label>';
+  html += '<div style="display:flex;gap:8px;align-items:flex-start">';
+  html += '<input type="text" id="add-name" class="form-input" style="flex:1" placeholder="' + tr("medPlaceholder") + '" value="' + F.name + '"/>';
+  html += '<button id="voice-btn" class="voice-btn' + (!vSupport?' unsupported':'') + '">🎤</button></div>';
+  html += '<label class="form-label">' + tr("time1") + '</label>';
+  html += '<div class="time-fields">';
+  html += '<div class="time-field"><input type="time" id="add-t1" class="form-input" value="' + F.time1 + '"/><div class="time-optional">1. Einnahme *</div></div>';
+  html += '<div class="time-field"><input type="time" id="add-t2" class="form-input" style="border-color:var(--cream2);opacity:.7" value="' + F.time2 + '"/>';
+  html += '<div class="time-optional">2. Einnahme (optional)</div></div>';
+  html += '<div class="time-field"><input type="time" id="add-t3" class="form-input" style="border-color:var(--cream2);opacity:.7" value="' + F.time3 + '"/>';
+  html += '<div class="time-optional">3. Einnahme (optional)</div></div>';
+  html += '<div class="time-field"><input type="time" id="add-t4" class="form-input" style="border-color:var(--cream2);opacity:.7" value="' + F.time4 + '"/>';
+  html += '<div class="time-optional">4. Einnahme (optional)</div></div>';
+  html += '</div>';
+  html += '<label class="form-label">' + tr("color") + '</label>';
+  html += '<div class="colors-row">';
+  for (var ci = 0; ci < COLORS.length; ci++) {
+    html += '<button class="color-btn' + (COLORS[ci]===F.color?' sel':'') + '" style="background:' + COLORS[ci] + '" data-color="' + COLORS[ci] + '"></button>';
+  }
+  html += '</div>';
+  if (F.name) {
+    html += '<label class="form-label">' + tr("preview") + '</label>';
+    html += '<div class="preview-card"><div id="prev-dot" style="width:16px;height:16px;border-radius:50%;background:' + F.color + ';flex-shrink:0"></div>';
+    html += '<div><div style="font-weight:700;font-size:15px" id="prev-name">' + F.name + '</div>';
+    html += '<div style="font-size:13px;color:var(--ink2);margin-top:2px" id="prev-time">' + F.time1 + (F.time2?' · '+F.time2:'') + '</div></div></div>';
+  } else {
+    html += '<div id="add-preview" style="display:none"><div class="preview-card"><div id="prev-dot" style="width:16px;height:16px;border-radius:50%;background:' + F.color + ';flex-shrink:0"></div>';
+    html += '<div><div style="font-weight:700;font-size:15px" id="prev-name"></div>';
+    html += '<div style="font-size:13px;color:var(--ink2);margin-top:2px" id="prev-time"></div></div></div></div>';
+  }
+  html += '<button class="btn-primary" id="save-btn">' + (F.editId ? (S.lang==="de"?"✏️ Änderungen speichern":"✏️ Save changes") : tr("save")) + '</button>';
+  return html;
+}
+
+function buildSettings(ov) {
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  var html = '';
+  if (deferredInstall || ios) {
+    html += '<div class="install-card anim-up"><div class="install-card-title">📲 ' + tr("installTitle") + '</div>';
+    html += '<div class="install-card-text">' + (ios ? tr("installIos") : tr("installText")) + '</div>';
+    if (!ios) html += '<button class="btn-primary" style="margin:0" id="install-btn">📲 ' + tr("installBtn") + '</button>';
+    html += '</div>';
+  }
+  html += '<div class="settings-section anim-up"><div class="settings-title">' + tr("statsTitle") + '</div>';
+  html += '<div class="settings-card">';
+  html += '<div class="settings-row"><div><div class="settings-row-label">' + tr("total14") + '</div><div class="settings-row-sub">' + ov.dn + ' / ' + ov.tot + ' ' + tr("totalDoses") + '</div></div>';
+  html += '<div style="font-size:22px;font-weight:800;color:var(--teal)">' + ov.pct + '%</div></div>';
+  html += '<div class="settings-row"><div class="settings-row-label">' + tr("streak") + '</div>';
+  html += '<div style="font-size:22px;font-weight:800;color:var(--gold)">🔥 ' + calcStreak() + '</div></div></div></div>';
+  html += '<div class="settings-section anim-up" style="animation-delay:60ms"><div class="settings-title">' + tr("lang") + '</div>';
+  html += '<div class="settings-card"><div class="lang-grid">';
+  var langKeys = Object.keys(LANGS);
+  for (var li = 0; li < langKeys.length; li++) {
+    var code = langKeys[li];
+    html += '<button class="lang-btn' + (S.lang===code?' sel':'') + '" data-lang="' + code + '">' + LANGS[code].flag + ' ' + LANGS[code].name + '</button>';
+  }
+  html += '</div></div></div>';
+  html += '<div class="settings-section anim-up" style="animation-delay:120ms"><div class="settings-title">' + tr("notifAllow") + '</div>';
+  html += '<div class="settings-card"><div class="settings-row">';
+  html += '<div><div class="settings-row-label">' + (S.notif ? tr("notifOn") : tr("notifAllow")) + '</div>';
+  html += '<div class="settings-row-sub">Daily reminders</div></div>';
+  html += '<button class="settings-action" id="notif-btn">' + (S.notif ? tr("notifTest") : tr("notifAllow")) + '</button>';
+  html += '</div></div></div>';
+  html += '<div class="settings-section anim-up" style="animation-delay:180ms"><div class="settings-card">';
+  html += '<div class="settings-row"><div>';
+  html += '<div class="settings-row-label" style="color:var(--red)">' + tr("resetAll") + '</div>';
+  html += '<div class="settings-row-sub">Cannot be undone</div></div>';
+  html += '<button class="settings-action danger" id="reset-btn">' + tr("resetAll") + '</button></div></div></div>';
+  html += '<div style="text-align:center;padding:20px 0 8px;font-size:12px;color:var(--ink3)">PillPlan v1.0</div>';
+  return html;
+}
+
+// ── Events ─────────────────────────────────────────────────
+function bindEvents() {
+  var root = document.getElementById("app");
+
+  root.addEventListener("click", function(e) {
+    var nav = e.target.closest("[data-nav]");
+    if (nav) { S.screen = nav.dataset.nav; persist(); render(); return; }
+
+    var per = e.target.closest("[data-period]");
+    if (per) { S.period = parseInt(per.dataset.period); persist(); render(); return; }
+
+    var tog = e.target.closest("[data-toggle]");
+    if (tog) {
+      tog.style.pointerEvents = "none";
+      var mid = tog.dataset.toggle; var time = tog.dataset.time; var date = tog.dataset.date;
+      var k = date + "_" + mid + "_" + time;
+      S.taken[k] = !S.taken[k];
+      if (S.taken[k]) showToast(tr("taken"));
+      persist(); render(); return;
+    }
+    var tod = e.target.closest("[data-toggle-day]");
+    if (tod) {
+      var mid2 = parseInt(tod.dataset.toggleDay); var date2 = tod.dataset.date;
+      var m2 = null;
+      for (var i = 0; i < S.meds.length; i++) { if (S.meds[i].id === mid2) { m2 = S.meds[i]; break; } }
+      if (!m2) return;
+      var done3 = allDoneDay(m2, date2);
+      for (var j = 0; j < m2.times.length; j++) { S.taken[date2 + "_" + mid2 + "_" + m2.times[j]] = !done3; }
+      if (!done3) showToast(tr("taken"));
+      persist(); render(); return;
+    }
+    var ed = e.target.closest("[data-edit]");
+    if (ed) {
+      var eid = parseInt(ed.dataset.edit);
+      var em = S.meds.find(function(m){ return m.id === eid; });
+      if (!em) return;
+      F.name  = em.name;
+      F.time1 = em.times[0] || "08:00";
+      F.time2 = em.times[1] || "";
+      F.time3 = em.times[2] || "";
+      F.time4 = em.times[3] || "";
+      F.color = em.color;
+      F.editId = eid;
+      S.screen = "add"; persist(); render();
+      showToast(S.lang==="de"?"Medikament bearbeiten":"Edit medication");
+      return;
+    }
+    var rm = e.target.closest("[data-remove]");
+    if (rm) {
+      var rid = parseInt(rm.dataset.remove);
+      S.meds = S.meds.filter(function(m){ return m.id !== rid; });
+      showToast(tr("removed")); persist(); render(); return;
+    }
+    var col = e.target.closest("[data-color]");
+    if (col) { syncF(); F.color = col.dataset.color; render(); return; }
+    var lb = e.target.closest("[data-lang]");
+    if (lb) { S.lang = lb.dataset.lang; persist(); render(); return; }
+
+    var nb = document.getElementById("notif-btn");
+    if (nb && nb.contains(e.target)) { S.notif ? testNotif() : requestNotif(); return; }
+    var ib = document.getElementById("install-btn");
+    if (ib && ib.contains(e.target)) { installApp(); return; }
+    var rb = document.getElementById("reset-btn");
+    if (rb && rb.contains(e.target)) {
+      if (confirm(tr("resetConfirm"))) { S.meds = []; S.taken = {}; persist(); render(); showToast("Reset"); }
+      return;
+    }
+    var qa = document.getElementById("qr-ok");
+    if (qa && qa.contains(e.target)) {
+      var qr = document.getElementById("qr-in");
+      if (qr && qr.value.trim()) { syncF(); F.name = qr.value.trim(); render(); showToast(tr("qrApplied")); }
+      return;
+    }
+    var sv = document.getElementById("save-btn");
+    if (sv && sv.contains(e.target)) {
+      syncF();
+      if (!F.name.trim()) { showToast(tr("nameRequired")); return; }
+      var times = [F.time1];
+      if (F.time2) times.push(F.time2);
+      if (F.time3) times.push(F.time3);
+      if (F.time4) times.push(F.time4);
+      if (F.editId) {
+        for (var ei=0;ei<S.meds.length;ei++) {
+          if (S.meds[ei].id === F.editId) {
+            S.meds[ei].name = F.name.trim();
+            S.meds[ei].times = times;
+            S.meds[ei].color = F.color;
+            break;
+          }
+        }
+      } else {
+        S.meds.push({id: Date.now(), name: F.name.trim(), times: times, color: F.color});
+      }
+      F = {name:"", time1:"08:00", time2:"", time3:"", time4:"", color:"#2a7c74"};
+      S.screen = "today"; persist(); render(); showToast(tr("saved")); return;
+    }
+    var qrsb = document.getElementById("qr-scan-btn");
+    if (qrsb && qrsb.contains(e.target)) { openQRScanner(); return; }
+    var vb = document.getElementById("voice-btn");
+    if (vb && vb.contains(e.target) && !vb.classList.contains("unsupported")) { startVoice(); return; }
+    var pb = document.getElementById("print-btn");
+    if (pb && pb.contains(e.target)) { window.print(); return; }
+    var smb = document.getElementById("share-main-btn");
+    if (smb && smb.contains(e.target)) { doShare(); return; }
+    var swa = document.getElementById("share-wa");
+    if (swa && swa.contains(e.target)) { shareVia("whatsapp"); return; }
+    var sml = document.getElementById("share-mail");
+    if (sml && sml.contains(e.target)) { shareVia("mail"); return; }
+    var scp = document.getElementById("share-copy");
+    if (scp && scp.contains(e.target)) { shareVia("copy"); return; }
+  });
+
+  var inputs = ["add-name","add-t1","add-t2","add-t3","add-t4"];
+  for (var i = 0; i < inputs.length; i++) {
+    (function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", function() {
+        syncF();
+        var pv = document.getElementById("add-preview");
+        var pn = document.getElementById("prev-name");
+        var pt = document.getElementById("prev-time");
+        var pd = document.getElementById("prev-dot");
+        if (pv) pv.style.display = F.name ? "block" : "none";
+        if (pn) pn.textContent = F.name;
+        var allTimes = [F.time1];
+        if (F.time2) allTimes.push(F.time2);
+        if (F.time3) allTimes.push(F.time3);
+        if (F.time4) allTimes.push(F.time4);
+        if (pt) pt.textContent = allTimes.join(" · ");
+        if (pd) pd.style.background = F.color;
+      });
+    })(inputs[i]);
+  }
+  var qi = document.getElementById("qr-in");
+  if (qi) {
+    qi.addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && qi.value.trim()) {
+        syncF(); F.name = qi.value.trim(); render(); showToast(tr("qrApplied"));
+      }
+    });
+  }
+}
+
+function syncF() {
+  var n  = document.getElementById("add-name");
+  var t1 = document.getElementById("add-t1");
+  var t2 = document.getElementById("add-t2");
+  var t3 = document.getElementById("add-t3");
+  var t4 = document.getElementById("add-t4");
+  if (n)  F.name  = n.value;
+  if (t1) F.time1 = t1.value;
+  if (t2) F.time2 = t2.value;
+  if (t3) F.time3 = t3.value;
+  if (t4) F.time4 = t4.value;
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+
+render();
+</script>
+</body>
+</html>
