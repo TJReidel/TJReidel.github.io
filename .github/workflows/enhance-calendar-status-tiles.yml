@@ -1,0 +1,34 @@
+name: Enhance PillPlan calendar status tiles
+
+on:
+  push:
+    branches:
+      - feature/calendar-status-tiles-2026-08-31
+    paths:
+      - scripts/enhance_calendar_status_tiles.py
+      - .github/workflows/enhance-calendar-status-tiles.yml
+
+permissions:
+  contents: write
+
+jobs:
+  enhance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/calendar-status-tiles-2026-08-31
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply calendar tile enhancement
+        run: python scripts/enhance_calendar_status_tiles.py
+      - name: Verify stronger status tiles
+        run: |
+          grep -q '.day-cell.done{background:var(--teal);border-color:var(--teal)}' index.html
+          grep -q '.day-cell.tier-red{background:var(--red);border-color:#8f2d23}' index.html
+          grep -q '.day-ico{font-size:17px' index.html
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Improve calendar status visibility for older users
+          file_pattern: index.html
