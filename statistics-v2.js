@@ -12,6 +12,10 @@
     return date + "_" + medicationId + "_" + scheduledTime;
   }
 
+  function timesForDate(med, date) {
+    return global.medicationTimesForDate ? global.medicationTimesForDate(med, date) : med.times;
+  }
+
   function breakdown(takenMap, medications, days) {
     var out = { total:0, documented:0, pct:0, green:0, yellow:0, red:0, unrated:0, undocumented:0 };
     var map = takenMap || {};
@@ -21,9 +25,10 @@
     for (var m = 0; m < meds.length; m++) {
       var med = meds[m];
       for (var d = 0; d < ds.length; d++) {
-        for (var t = 0; t < med.times.length; t++) {
+        var times = timesForDate(med, ds[d]);
+        for (var t = 0; t < times.length; t++) {
           out.total++;
-          var entry = map[intakeKey(ds[d], med.id, med.times[t])];
+          var entry = map[intakeKey(ds[d], med.id, times[t])];
           var n = api().normalizeEntry(entry);
           if (!n.taken) {
             out.undocumented++;
