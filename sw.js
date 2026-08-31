@@ -1,4 +1,4 @@
-const CACHE="pillplan-v4";
+const CACHE="pillplan-v5";
 const SHELL=["/","/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
