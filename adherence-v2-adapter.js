@@ -66,7 +66,15 @@
   }
 
   var PRODUCT_COPY_V1 = {
-    de: { overdue:"Stark verspätet", total14:"Dokumentierte Einnahmen", shareTitle:"Meine dokumentierten Einnahmen", shareText:"Dokumentierte Einnahmen (PillPlan):" },
+    de: {
+      overdue:"Stark verspätet",
+      total14:"Dokumentierte Einnahmen",
+      shareTitle:"Meine dokumentierten Einnahmen",
+      shareText:"Dokumentierte Einnahmen (PillPlan):",
+      doses:"dokumentiert",
+      allDoneMotivation:"Alles für heute dokumentiert.",
+      allDoneSub:"Gut, dass Sie Ihre Einnahmen im Blick behalten."
+    },
     en: { overdue:"Very late", total14:"Documented doses", shareTitle:"My documented doses", shareText:"Documented doses (PillPlan):" },
     fr: { overdue:"Très en retard", total14:"Prises documentées", shareTitle:"Mes prises documentées", shareText:"Prises documentées (PillPlan) :" },
     es: { overdue:"Muy atrasado", total14:"Tomas documentadas", shareTitle:"Mis tomas documentadas", shareText:"Tomas documentadas (PillPlan):" },
