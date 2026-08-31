@@ -1,0 +1,34 @@
+name: Add PillPlan calendar legend
+
+on:
+  push:
+    branches:
+      - feature/calendar-status-tiles-2026-08-31
+    paths:
+      - scripts/add_calendar_legend.py
+      - .github/workflows/add-calendar-legend.yml
+
+permissions:
+  contents: write
+
+jobs:
+  add-legend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/calendar-status-tiles-2026-08-31
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Add legend
+        run: python scripts/add_calendar_legend.py
+      - name: Verify legend placement
+        run: |
+          grep -q 'Was bedeuten die Farben?' index.html
+          grep -q 'status-legend' index.html
+          grep -q 'Wichtige Info' index.html
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Add adherence color legend to Plan and important information
+          file_pattern: index.html
