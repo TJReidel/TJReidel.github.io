@@ -51,8 +51,9 @@
   }
 
   function medicationDaySummary(takenMap, medication, date) {
+    var times = global.medicationTimesForDate ? global.medicationTimesForDate(medication, date) : medication.times;
     var entries = [];
-    for (var i = 0; i < medication.times.length; i++) entries.push(getEntry(takenMap, date, medication.id, medication.times[i]));
+    for (var i = 0; i < times.length; i++) entries.push(getEntry(takenMap, date, medication.id, times[i]));
     return api().daySummary(entries);
   }
 
@@ -108,6 +109,17 @@
     document.head.appendChild(s);
   }
 
+  function loadMedicationScheduleV1() {
+    if (global.PillPlanMedicationScheduleV1) { loadStatisticsV2(); return; }
+    if (document.querySelector('script[data-pillplan-med-schedule-v1]')) return;
+    var s = document.createElement("script");
+    s.src = "medication-schedule-v1.js";
+    s.async = false;
+    s.setAttribute("data-pillplan-med-schedule-v1", "1");
+    s.onload = loadStatisticsV2;
+    document.head.appendChild(s);
+  }
+
   global.PillPlanAdherenceAdapter = {
     key:key, getEntry:getEntry, isDone:isDone, markTakenNow:markTakenNow,
     markRetroactive:markRetroactive, undo:undo, entryPresentation:entryPresentation,
@@ -118,7 +130,7 @@
   if (typeof document !== "undefined") {
     document.addEventListener("DOMContentLoaded", function () {
       if (applyProductTerminology() && typeof global.render === "function") global.render();
-      loadStatisticsV2();
+      loadMedicationScheduleV1();
     }, { once:true });
   }
 })(typeof window !== "undefined" ? window : globalThis);
