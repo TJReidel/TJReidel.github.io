@@ -1,4 +1,4 @@
-const CACHE="pillplan-v9";
+const CACHE="pillplan-v10";
 const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
