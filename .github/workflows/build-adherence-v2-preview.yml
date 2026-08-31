@@ -4,15 +4,20 @@ on:
   push:
     branches:
       - feature/adherence-history-v2
+    paths:
+      - scripts/wire_adherence_v2.py
+      - .github/workflows/build-adherence-v2-preview.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-preview:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feature/adherence-history-v2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -21,8 +26,14 @@ jobs:
       - name: Verify integration
         run: |
           grep -q 'adherence-v2.js' index.html
+          grep -q 'adherence-v2-adapter.js' index.html
           grep -q 'createTimedEntry' index.html
           grep -q 'createRetroactiveEntry' index.html
+          grep -q 'tier-red' index.html
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Wire adherence history v2 into PillPlan UI
+          file_pattern: index.html
       - uses: actions/upload-artifact@v4
         with:
           name: adherence-v2-preview
