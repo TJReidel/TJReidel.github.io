@@ -40,6 +40,9 @@ Dieser Satz ist die verbindliche Leitplanke für neue Funktionen, Texte und Dars
 10. **Keine medizinische Überdehnung**  
     Die 30-/45-Minuten-Ampel ist eine Dokumentations-/Adhärenzvisualisierung und keine klinische Sicherheitsbewertung. Produkttexte dürfen keine medizinische Validierung suggerieren, die nicht belegt ist.
 
+11. **Freie Einnahmezeiten statt Tageszeit-Schablonen**  
+    PillPlan arbeitet mit konkret frei wählbaren Uhrzeiten pro Medikament. Es gibt keine feste Logik für "morgens", "mittags" und "abends". Ein Medikament kann mehrere Einnahmezeitpunkte am selben Tag haben; jede hinterlegte Uhrzeit ist ein eigener geplanter Einnahmezeitpunkt. Statistik, Kalender, Scan, Spracheingabe und spätere Reminder müssen diese Logik beibehalten.
+
 ## Anwendung auf neue Funktionen
 
 Jede neue Funktion – insbesondere Reminder, Statistik, Scan, Spracheingabe, Teilen, native App und spätere Erweiterungen – wird vor Umsetzung gegen diese Leitplanken geprüft.
@@ -49,6 +52,7 @@ Eine Funktion wird nicht umgesetzt oder muss vereinfacht werden, wenn sie:
 - Fremdkontrolle oder Überwachung suggeriert,
 - fehlende Daten wertend interpretiert,
 - Datenhoheit einschränkt,
+- eine starre Morgen-/Mittag-/Abend-Logik erzwingt,
 - oder die Oberfläche für die Kernzielgruppe unnötig komplex macht.
 
 ## Entscheidungsregel
