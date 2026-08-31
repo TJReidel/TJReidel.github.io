@@ -44,44 +44,24 @@
     var n = api().normalizeEntry(entry);
     if (!n.taken) return { tier: null, css: "pending", icon: "○", labelKey: "pending" };
 
-    if (n.tier === api().TIER.RED) {
-      return { tier: "red", css: "overdue", icon: "●", labelKey: "takenRed" };
-    }
-    if (n.tier === api().TIER.YELLOW) {
-      return { tier: "yellow", css: "yellow", icon: "●", labelKey: "takenYellow" };
-    }
-    if (n.tier === api().TIER.GREEN) {
-      return { tier: "green", css: "done", icon: "✓", labelKey: "takenGreen" };
-    }
+    if (n.tier === api().TIER.RED) return { tier: "red", css: "overdue", icon: "●", labelKey: "takenRed" };
+    if (n.tier === api().TIER.YELLOW) return { tier: "yellow", css: "yellow", icon: "●", labelKey: "takenYellow" };
+    if (n.tier === api().TIER.GREEN) return { tier: "green", css: "done", icon: "✓", labelKey: "takenGreen" };
     return { tier: "unrated", css: "unrated", icon: "✓", labelKey: "takenUnrated" };
   }
 
   function medicationDaySummary(takenMap, medication, date) {
     var entries = [];
-    for (var i = 0; i < medication.times.length; i++) {
-      entries.push(getEntry(takenMap, date, medication.id, medication.times[i]));
-    }
+    for (var i = 0; i < medication.times.length; i++) entries.push(getEntry(takenMap, date, medication.id, medication.times[i]));
     return api().daySummary(entries);
   }
 
   function dayPresentation(summary) {
-    if (!summary || summary.status === "none") {
-      return { css: "", icon: "·", labelKey: "dayNone" };
-    }
-    if (summary.status === "partial") {
-      // Completeness outranks color. A partially completed day must never appear green.
-      return { css: "partial", icon: "◑", labelKey: "dayPartial" };
-    }
-
-    if (summary.tier === api().TIER.RED) {
-      return { css: "tier-red", icon: "!", labelKey: "dayRed" };
-    }
-    if (summary.tier === api().TIER.YELLOW) {
-      return { css: "tier-yellow", icon: "!", labelKey: "dayYellow" };
-    }
-    if (summary.tier === api().TIER.GREEN) {
-      return { css: "done", icon: "✓", labelKey: "dayGreen" };
-    }
+    if (!summary || summary.status === "none") return { css: "", icon: "·", labelKey: "dayNone" };
+    if (summary.status === "partial") return { css: "partial", icon: "◑", labelKey: "dayPartial" };
+    if (summary.tier === api().TIER.RED) return { css: "tier-red", icon: "!", labelKey: "dayRed" };
+    if (summary.tier === api().TIER.YELLOW) return { css: "tier-yellow", icon: "!", labelKey: "dayYellow" };
+    if (summary.tier === api().TIER.GREEN) return { css: "done", icon: "✓", labelKey: "dayGreen" };
     return { css: "unrated", icon: "✓", labelKey: "dayUnrated" };
   }
 
@@ -105,31 +85,31 @@
       if (!global.T[lang]) continue;
       var patch = PRODUCT_COPY_V1[lang];
       var keys = Object.keys(patch);
-      for (var j = 0; j < keys.length; j++) {
-        global.T[lang][keys[j]] = patch[keys[j]];
-      }
+      for (var j = 0; j < keys.length; j++) global.T[lang][keys[j]] = patch[keys[j]];
     }
     return true;
   }
 
+  function loadStatisticsV2() {
+    if (global.PillPlanStatisticsV2 || document.querySelector('script[data-pillplan-stats-v2]')) return;
+    var s = document.createElement("script");
+    s.src = "statistics-v2.js";
+    s.async = false;
+    s.setAttribute("data-pillplan-stats-v2", "1");
+    document.head.appendChild(s);
+  }
+
   global.PillPlanAdherenceAdapter = {
-    key: key,
-    getEntry: getEntry,
-    isDone: isDone,
-    markTakenNow: markTakenNow,
-    markRetroactive: markRetroactive,
-    undo: undo,
-    entryPresentation: entryPresentation,
-    medicationDaySummary: medicationDaySummary,
-    dayPresentation: dayPresentation,
-    applyProductTerminology: applyProductTerminology
+    key:key, getEntry:getEntry, isDone:isDone, markTakenNow:markTakenNow,
+    markRetroactive:markRetroactive, undo:undo, entryPresentation:entryPresentation,
+    medicationDaySummary:medicationDaySummary, dayPresentation:dayPresentation,
+    applyProductTerminology:applyProductTerminology
   };
 
   if (typeof document !== "undefined") {
     document.addEventListener("DOMContentLoaded", function () {
-      if (applyProductTerminology() && typeof global.render === "function") {
-        global.render();
-      }
-    }, { once: true });
+      if (applyProductTerminology() && typeof global.render === "function") global.render();
+      loadStatisticsV2();
+    }, { once:true });
   }
 })(typeof window !== "undefined" ? window : globalThis);
