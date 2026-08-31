@@ -34,14 +34,16 @@
   function dayPresentation(summary){
     if(!summary||summary.status==="none") return {css:"",icon:"·",labelKey:"dayNone"};
     if(summary.status==="partial") return {css:"partial",icon:"◑",labelKey:"dayPartial"};
-    if(summary.tier===api().TIER.RED) return {css:"tier-red",icon:"!",labelKey:"dayRed"};
-    if(summary.tier===api().TIER.YELLOW) return {css:"tier-yellow",icon:"!",labelKey:"dayYellow"};
+    if(summary.tier===api().TIER.RED) return {css:"tier-red",icon:"●",labelKey:"dayRed"};
+    if(summary.tier===api().TIER.YELLOW) return {css:"tier-yellow",icon:"●",labelKey:"dayYellow"};
     if(summary.tier===api().TIER.GREEN) return {css:"done",icon:"✓",labelKey:"dayGreen"};
     return {css:"unrated",icon:"✓",labelKey:"dayUnrated"};
   }
 
-  var PRODUCT_COPY_V1={
-    de:{overdue:"Stark verspätet",total14:"Dokumentierte Einnahmen",shareTitle:"Meine dokumentierten Einnahmen",shareText:"Dokumentierte Einnahmen (PillPlan):",doses:"dokumentiert",allDoneMotivation:"Alles für heute dokumentiert.",allDoneSub:"Gut, dass Sie Ihre Einnahmen im Blick behalten.",time1:"Einnahmezeiten"},
+  var PRODUCT_COPY_V12={
+    de:{
+      overdue:"Stark verspätet",total14:"Dokumentierte Einnahmen",shareTitle:"Meine dokumentierten Einnahmen",shareText:"Dokumentierte Einnahmen (PillPlan):",doses:"dokumentiert",allDoneMotivation:"Alles für heute dokumentiert.",allDoneSub:"Gut, dass Sie Ihre Einnahmen im Blick behalten.",time1:"Einnahmezeiten",mhdTitle:"Verfallsdatum",mhdText:"Bitte prüfen Sie regelmäßig das Verfallsdatum Ihrer Medikamente."
+    },
     en:{overdue:"Very late",total14:"Documented doses",shareTitle:"My documented doses",shareText:"Documented doses (PillPlan):"},
     fr:{overdue:"Très en retard",total14:"Prises documentées",shareTitle:"Mes prises documentées",shareText:"Prises documentées (PillPlan) :"},
     es:{overdue:"Muy atrasado",total14:"Tomas documentadas",shareTitle:"Mis tomas documentadas",shareText:"Tomas documentadas (PillPlan):"},
@@ -53,23 +55,127 @@
   };
   function applyProductTerminology(){
     if(!global.T) return false;
-    Object.keys(PRODUCT_COPY_V1).forEach(function(lang){ if(!global.T[lang])return; var patch=PRODUCT_COPY_V1[lang]; Object.keys(patch).forEach(function(k){global.T[lang][k]=patch[k];}); });
+    Object.keys(PRODUCT_COPY_V12).forEach(function(lang){
+      if(!global.T[lang]) return;
+      var patch=PRODUCT_COPY_V12[lang];
+      Object.keys(patch).forEach(function(k){global.T[lang][k]=patch[k];});
+    });
     return true;
   }
 
   var SETTINGS_COPY={
-    de:["Tägliche Erinnerungen","Kann nicht rückgängig gemacht werden"],en:["Daily reminders","Cannot be undone"],fr:["Rappels quotidiens","Action irréversible"],es:["Recordatorios diarios","No se puede deshacer"],it:["Promemoria giornalieri","Non può essere annullato"],tr:["Günlük hatırlatmalar","Geri alınamaz"],ar:["تذكيرات يومية","لا يمكن التراجع"],ru:["Ежедневные напоминания","Отменить нельзя"],pt:["Lembretes diários","Não pode ser desfeito"]
+    de:{daily:"Tägliche Erinnerungen",undo:"Dieser Vorgang kann nicht rückgängig gemacht werden.",deleteBtn:"Daten löschen",documentation:"Dokumentation",punctuality:"Pünktlichkeit"},
+    en:{daily:"Daily reminders",undo:"This action cannot be undone.",deleteBtn:"Delete data",documentation:"Documentation",punctuality:"Punctuality"},
+    fr:{daily:"Rappels quotidiens",undo:"Cette action est irréversible.",deleteBtn:"Supprimer les données",documentation:"Documentation",punctuality:"Ponctualité"},
+    es:{daily:"Recordatorios diarios",undo:"Esta acción no se puede deshacer.",deleteBtn:"Eliminar datos",documentation:"Documentación",punctuality:"Puntualidad"},
+    it:{daily:"Promemoria giornalieri",undo:"Questa azione non può essere annullata.",deleteBtn:"Elimina dati",documentation:"Documentazione",punctuality:"Puntualità"},
+    tr:{daily:"Günlük hatırlatmalar",undo:"Bu işlem geri alınamaz.",deleteBtn:"Verileri sil",documentation:"Belgeleme",punctuality:"Zamanında alma"},
+    ar:{daily:"تذكيرات يومية",undo:"لا يمكن التراجع عن هذا الإجراء.",deleteBtn:"حذف البيانات",documentation:"التوثيق",punctuality:"الالتزام بالوقت"},
+    ru:{daily:"Ежедневные напоминания",undo:"Это действие нельзя отменить.",deleteBtn:"Удалить данные",documentation:"Документирование",punctuality:"Своевременность"},
+    pt:{daily:"Lembretes diários",undo:"Esta ação não pode ser desfeita.",deleteBtn:"Apagar dados",documentation:"Documentação",punctuality:"Pontualidade"}
   };
 
+  function langCopy(){
+    var lang=(global.S&&global.S.lang)||"de";
+    return SETTINGS_COPY[lang]||SETTINGS_COPY.en;
+  }
+
+  function injectV12Styles(){
+    if(document.getElementById("pillplan-v12-styles")) return;
+    var style=document.createElement("style");
+    style.id="pillplan-v12-styles";
+    style.textContent=".pp-quality-line{font-size:12px;opacity:.92;margin-top:-7px;margin-bottom:10px;font-weight:600}.dose-icon.pp-documented{font-size:23px;font-weight:900;color:var(--ink2)}.dose-card.overdue .dose-icon.pp-documented{color:var(--red)}.dose-card.tier-yellow .dose-icon.pp-documented{color:#8a641d}.status-swatch.red,.status-swatch.yellow{font-size:15px}.pp-version-note{font-weight:600}";
+    document.head.appendChild(style);
+  }
+
+  function todaysTimingStats(){
+    var result={documented:0,total:0,onTime:0,rated:0};
+    if(!global.S||!global.PillPlanAdherenceV2) return result;
+    var date=new Date().toISOString().split("T")[0];
+    for(var i=0;i<global.S.meds.length;i++){
+      var med=global.S.meds[i];
+      for(var j=0;j<med.times.length;j++){
+        result.total++;
+        var entry=getEntry(global.S.taken,date,med.id,med.times[j]);
+        var n=api().normalizeEntry(entry);
+        if(!n.taken) continue;
+        result.documented++;
+        if(n.tier===api().TIER.GREEN){result.onTime++;result.rated++;}
+        else if(n.tier===api().TIER.YELLOW||n.tier===api().TIER.RED){result.rated++;}
+      }
+    }
+    return result;
+  }
+
+  function polishRenderedUi(){
+    injectV12Styles();
+    document.title="PillPlan 1.2";
+    var copy=langCopy();
+
+    // 1) Separate documentation completeness from timing quality.
+    var stats=todaysTimingStats();
+    var title=document.querySelector(".progress-title");
+    var sub=document.querySelector(".progress-sub");
+    if(title) title.textContent=copy.documentation;
+    if(sub){
+      sub.textContent=stats.documented+" / "+stats.total+" "+((global.S&&global.S.lang)==="de"?"dokumentiert":"documented");
+      var old=document.querySelector(".pp-quality-line"); if(old) old.remove();
+      if(stats.documented>0){
+        var quality=document.createElement("div");
+        quality.className="pp-quality-line";
+        var pct=stats.rated?Math.round(stats.onTime/stats.rated*100):null;
+        quality.textContent=copy.punctuality+": "+(pct===null?"–":pct+"%");
+        sub.insertAdjacentElement("afterend",quality);
+      }
+    }
+
+    // 2) Check mark = documented; card color = timing quality.
+    var cards=document.querySelectorAll(".dose-card");
+    cards.forEach(function(card){
+      var button=card.querySelector(".check-btn");
+      var icon=card.querySelector(".dose-icon");
+      if(button&&button.getAttribute("aria-pressed")==="true"&&icon){
+        icon.textContent="✓";
+        icon.classList.add("pp-documented");
+      }
+    });
+
+    // 3) Plan view: no alarm-like double exclamation marks.
+    document.querySelectorAll(".day-ico").forEach(function(el){ if(el.textContent.trim()==="!!") el.textContent="●"; });
+    document.querySelectorAll(".status-swatch.red,.status-swatch.yellow").forEach(function(el){ if(el.textContent.trim()==="!") el.textContent="●"; });
+
+    // 4) Localize residual settings copy and reduce duplicate destructive wording.
+    document.querySelectorAll(".settings-row-sub").forEach(function(el){
+      if(el.textContent.trim()==="Daily reminders") el.textContent=copy.daily;
+      if(el.textContent.trim()==="Cannot be undone") el.textContent=copy.undo;
+    });
+    var reset=document.getElementById("reset-btn");
+    if(reset) reset.textContent=copy.deleteBtn;
+
+    // 5) Expiry-date reminder is not part of the daily core flow.
+    document.querySelectorAll(".mhd-banner").forEach(function(el){
+      var txt=el.textContent||"";
+      if(txt.indexOf("Mindesthaltbarkeitsdatum")>=0||txt.indexOf("Verfallsdatum")>=0||txt.indexOf("expiry date")>=0||txt.indexOf("Expiry date")>=0) el.remove();
+    });
+
+    // Visible version marker.
+    document.querySelectorAll("div").forEach(function(el){
+      if(el.children.length===0&&el.textContent.trim()==="PillPlan v1.1"){
+        el.textContent="PillPlan v1.2";
+        el.classList.add("pp-version-note");
+      }
+    });
+  }
+
   function installRuntimeGuards(){
-    if(global.__pillplanRuntimeGuards) return;
-    global.__pillplanRuntimeGuards=true;
+    if(global.__pillplanRuntimeGuardsV12) return;
+    global.__pillplanRuntimeGuardsV12=true;
 
     if(typeof global.buildSettings==="function"){
       var baseSettings=global.buildSettings;
       global.buildSettings=function(ov){
-        var html=baseSettings(ov),copy=SETTINGS_COPY[(global.S&&global.S.lang)||"en"]||SETTINGS_COPY.en;
-        return html.replace("Daily reminders",copy[0]).replace("Cannot be undone",copy[1]);
+        var html=baseSettings(ov),copy=langCopy();
+        return html.replace("Daily reminders",copy.daily).replace("Cannot be undone",copy.undo);
       };
     }
 
@@ -83,7 +189,9 @@
             global.S.meds[i].times=times.slice();
           }
         }
-        return baseRender();
+        var result=baseRender();
+        polishRenderedUi();
+        return result;
       };
       global.render();
     }
@@ -100,7 +208,10 @@
     s.onload=function(){installRuntimeGuards();loadStatisticsV2();}; document.head.appendChild(s);
   }
 
-  global.PillPlanAdherenceAdapter={key:key,getEntry:getEntry,isDone:isDone,markTakenNow:markTakenNow,markRetroactive:markRetroactive,undo:undo,entryPresentation:entryPresentation,medicationDaySummary:medicationDaySummary,dayPresentation:dayPresentation,applyProductTerminology:applyProductTerminology};
+  global.PillPlanAdherenceAdapter={key:key,getEntry:getEntry,isDone:isDone,markTakenNow:markTakenNow,markRetroactive:markRetroactive,undo:undo,entryPresentation:entryPresentation,medicationDaySummary:medicationDaySummary,dayPresentation:dayPresentation,applyProductTerminology:applyProductTerminology,polishRenderedUi:polishRenderedUi};
 
-  if(typeof document!=="undefined") document.addEventListener("DOMContentLoaded",function(){ if(applyProductTerminology()&&typeof global.render==="function")global.render(); loadMedicationScheduleV1(); },{once:true});
+  if(typeof document!=="undefined") document.addEventListener("DOMContentLoaded",function(){
+    applyProductTerminology();
+    loadMedicationScheduleV1();
+  },{once:true});
 })(typeof window!=="undefined"?window:globalThis);
