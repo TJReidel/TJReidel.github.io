@@ -1,5 +1,5 @@
-const CACHE="pillplan-v7";
-const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/icon.png","/icon-512.png"];
+const CACHE="pillplan-v8";
+const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
