@@ -41,7 +41,6 @@
   }
 
   function normalizeEntry(entry) {
-    // Backward compatibility: historical boolean true means taken, but timing is unknown.
     if (entry === true) {
       return { taken: true, takenAt: null, tier: TIER.UNRATED, legacy: true };
     }
@@ -51,7 +50,7 @@
     if (typeof entry === "object") {
       var tier = entry.tier;
       if ([TIER.GREEN, TIER.YELLOW, TIER.RED, TIER.UNRATED].indexOf(tier) === -1) {
-        tier = entry.takenAt ? TIER.UNRATED : TIER.UNRATED;
+        tier = TIER.UNRATED;
       }
       return {
         taken: entry.taken !== false,
@@ -75,8 +74,6 @@
   }
 
   function createRetroactiveEntry() {
-    // A past date may be marked as taken, but without an actual intake timestamp
-    // PillPlan must not invent a green/yellow/red classification.
     return {
       taken: true,
       takenAt: null,
@@ -95,11 +92,13 @@
   }
 
   function worstTier(tiers) {
+    // A complete day may only be green when every confirmed intake is rated green.
+    // Unrated therefore outranks green, while a documented yellow/red delay still outranks unrated.
     var rank = {};
-    rank[TIER.UNRATED] = 0;
     rank[TIER.GREEN] = 1;
-    rank[TIER.YELLOW] = 2;
-    rank[TIER.RED] = 3;
+    rank[TIER.UNRATED] = 2;
+    rank[TIER.YELLOW] = 3;
+    rank[TIER.RED] = 4;
 
     var worst = null;
     for (var i = 0; i < tiers.length; i++) {
