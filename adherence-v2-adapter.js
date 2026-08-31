@@ -73,7 +73,8 @@
       shareText:"Dokumentierte Einnahmen (PillPlan):",
       doses:"dokumentiert",
       allDoneMotivation:"Alles für heute dokumentiert.",
-      allDoneSub:"Gut, dass Sie Ihre Einnahmen im Blick behalten."
+      allDoneSub:"Gut, dass Sie Ihre Einnahmen im Blick behalten.",
+      time1:"Einnahmezeiten"
     },
     en: { overdue:"Very late", total14:"Documented doses", shareTitle:"My documented doses", shareText:"Documented doses (PillPlan):" },
     fr: { overdue:"Très en retard", total14:"Prises documentées", shareTitle:"Mes prises documentées", shareText:"Prises documentées (PillPlan) :" },
