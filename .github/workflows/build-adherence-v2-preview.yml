@@ -1,0 +1,29 @@
+name: Build adherence v2 preview
+
+on:
+  push:
+    branches:
+      - feature/adherence-history-v2
+
+permissions:
+  contents: read
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply exact wiring replacements
+        run: python scripts/wire_adherence_v2.py
+      - name: Verify integration
+        run: |
+          grep -q 'adherence-v2.js' index.html
+          grep -q 'createTimedEntry' index.html
+          grep -q 'createRetroactiveEntry' index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adherence-v2-preview
+          path: index.html
