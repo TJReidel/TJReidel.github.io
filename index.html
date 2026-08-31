@@ -117,6 +117,19 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 .day-cell.tier-red .day-wd,.day-cell.tier-red .day-num,.day-cell.tier-red .day-ico{color:#fff}
 .day-cell.unrated .day-wd,.day-cell.unrated .day-num,.day-cell.unrated .day-ico{color:var(--ink)}
 .day-cell.partial .day-ico{color:var(--teal)}
+.status-legend{background:#fff;border:2px solid var(--cream2);border-radius:16px;margin:0 0 18px;padding:0;overflow:hidden}
+.status-legend summary{list-style:none;cursor:pointer;padding:14px 16px;font-size:15px;font-weight:800;color:var(--ink);display:flex;align-items:center;justify-content:space-between;min-height:48px}
+.status-legend summary::-webkit-details-marker{display:none}
+.status-legend summary::after{content:"⌄";font-size:18px;color:var(--ink2)}
+.status-legend[open] summary::after{content:"⌃"}
+.status-legend-body{border-top:1px solid var(--cream2);padding:12px 16px 14px;display:grid;gap:9px}
+.status-legend-row{display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.35;color:var(--ink2)}
+.status-swatch{width:22px;height:22px;border-radius:7px;border:2px solid transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+.status-swatch.green{background:var(--teal);border-color:var(--teal);color:#fff}
+.status-swatch.yellow{background:var(--gold);border-color:#8c6f42;color:var(--ink)}
+.status-swatch.red{background:var(--red);border-color:#8f2d23;color:#fff}
+.status-swatch.neutral{background:#d9d5cf;border-color:#77716b;color:var(--ink)}
+.status-swatch.open{background:#fff;border-color:var(--cream2);color:var(--ink2)}
 .plan-divider{height:1px;background:var(--cream2);margin:20px 0}
 .qr-banner{background:var(--teal-bg);border:1.5px solid rgba(42,124,116,.25);border-radius:var(--r);padding:16px;margin-bottom:20px}
 .qr-banner-title{font-size:14px;font-weight:700;color:var(--teal);margin-bottom:10px}
@@ -975,11 +988,36 @@ function buildToday(s, td, nd) {
   return html;
 }
 
+function buildStatusLegend() {
+  var de = S.lang === "de";
+  var title = de ? "Was bedeuten die Farben?" : "What do the colors mean?";
+  var rows = de ? [
+    ["green","✓","Grün – Einnahme dokumentiert und pünktlich"],
+    ["yellow","!","Gelb – dokumentiert, 30–44 Min. verspätet"],
+    ["red","!","Rot – dokumentiert, 45 Min. oder mehr verspätet"],
+    ["neutral","✓","Hellgrau – nachgetragen, genaue Zeit unbekannt"],
+    ["open","○","Weiß – noch nicht dokumentiert"]
+  ] : [
+    ["green","✓","Green – documented and on time"],
+    ["yellow","!","Yellow – documented, 30–44 min late"],
+    ["red","!","Red – documented, 45 min or more late"],
+    ["neutral","✓","Light grey – added later, exact time unknown"],
+    ["open","○","White – not yet documented"]
+  ];
+  var html = '<details class="status-legend"><summary>' + title + '</summary><div class="status-legend-body">';
+  for (var i=0;i<rows.length;i++) {
+    html += '<div class="status-legend-row"><span class="status-swatch ' + rows[i][0] + '" aria-hidden="true">' + rows[i][1] + '</span><span>' + rows[i][2] + '</span></div>';
+  }
+  html += '</div></details>';
+  return html;
+}
+
 function buildPlan(days14, td) {
   if (!S.meds.length) {
     return '<div class="empty"><div class="empty-icon" aria-hidden="true">📅</div><div class="empty-text">' + tr("noMeds") + '</div><button class="btn-primary" style="width:auto;padding:14px 32px;margin:0 auto;display:block" data-nav="add">' + tr("addFirst") + '</button></div>';
   }
   var html = '';
+  html += buildStatusLegend();
   for (var mi = 0; mi < S.meds.length; mi++) {
     var m = S.meds[mi];
     html += '<div class="plan-med anim-up" style="animation-delay:' + (mi*60) + 'ms">';
@@ -1093,7 +1131,10 @@ function buildSettings(ov) {
     html += '<button class="lang-btn' + (S.lang===code?' sel':'') + '" data-lang="' + code + '" aria-pressed="' + (S.lang===code) + '">' + LANGS[code].flag + ' ' + LANGS[code].name + '</button>';
   }
   html += '</div></div></div>';
-  html += '<div class="settings-section anim-up" style="animation-delay:120ms"><div class="settings-title">' + tr("notifAllow") + '</div>';
+  html += '<div class="settings-section anim-up" style="animation-delay:120ms"><div class="settings-title">' + (S.lang==="de"?"Wichtige Info":"Important information") + '</div>';
+  html += buildStatusLegend();
+  html += '</div>';
+  html += '<div class="settings-section anim-up" style="animation-delay:160ms"><div class="settings-title">' + tr("notifAllow") + '</div>';
   html += '<div class="settings-card"><div class="settings-row">';
   html += '<div><div class="settings-row-label">' + (S.notif ? tr("notifOn") : tr("notifAllow")) + '</div>';
   html += '<div class="settings-row-sub">Daily reminders</div></div>';
