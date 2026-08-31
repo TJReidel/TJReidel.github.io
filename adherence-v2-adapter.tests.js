@@ -31,7 +31,8 @@
 
   X.markRetroactive(map, date, 7, "20:00");
   summary = X.medicationDaySummary(map, med, date);
-  assert("retroactive complete day remains unrated when no worse rated dose exists", summary.status === "complete");
+  assert("green plus unrated remains unrated", summary.status === "complete" && summary.tier === A.TIER.UNRATED);
+  assert("calendar presentation remains unrated", X.dayPresentation(summary).css === "unrated");
 
   var legacy = {};
   legacy[X.key(date, 7, "08:00")] = true;
