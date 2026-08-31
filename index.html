@@ -1119,7 +1119,7 @@ function bindEvents() {
     });
   }
 
-  root.addEventListener("click", function(e) {
+  root.onclick = function(e) {
     var nav = e.target.closest("[data-nav]");
     if (nav) { S.screen = nav.dataset.nav; persist(); render(); return; }
 
@@ -1235,7 +1235,7 @@ function bindEvents() {
     if (sml && sml.contains(e.target)) { shareVia("mail"); return; }
     var scp = document.getElementById("share-copy");
     if (scp && scp.contains(e.target)) { shareVia("copy"); return; }
-  });
+  };
 
   var inputs = ["add-name","add-t1","add-t2","add-t3","add-t4"];
   for (var i = 0; i < inputs.length; i++) {
