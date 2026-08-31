@@ -1,6 +1,7 @@
 // PillPlan Adherence History v2 - application adapter
-// This file contains the integration logic that index.html will call.
-// It deliberately has no automatic DOM side effects.
+// Integration helpers used by index.html.
+// Product terminology is normalized once after DOMContentLoaded so the UI
+// describes only what PillPlan can actually infer from documented data.
 
 (function (global) {
   "use strict";
@@ -84,6 +85,33 @@
     return { css: "unrated", icon: "✓", labelKey: "dayUnrated" };
   }
 
+  var PRODUCT_COPY_V1 = {
+    de: { overdue:"Stark verspätet", total14:"Dokumentierte Einnahmen", shareTitle:"Meine dokumentierten Einnahmen", shareText:"Dokumentierte Einnahmen (PillPlan):" },
+    en: { overdue:"Very late", total14:"Documented doses", shareTitle:"My documented doses", shareText:"Documented doses (PillPlan):" },
+    fr: { overdue:"Très en retard", total14:"Prises documentées", shareTitle:"Mes prises documentées", shareText:"Prises documentées (PillPlan) :" },
+    es: { overdue:"Muy atrasado", total14:"Tomas documentadas", shareTitle:"Mis tomas documentadas", shareText:"Tomas documentadas (PillPlan):" },
+    it: { overdue:"Molto in ritardo", total14:"Assunzioni documentate", shareTitle:"Le mie assunzioni documentate", shareText:"Assunzioni documentate (PillPlan):" },
+    tr: { overdue:"Çok gecikmiş", total14:"Belgelenen dozlar", shareTitle:"Belgelenen dozlarım", shareText:"Belgelenen dozlar (PillPlan):" },
+    ar: { overdue:"متأخر جدًا", total14:"الجرعات الموثقة", shareTitle:"جرعاتي الموثقة", shareText:"الجرعات الموثقة (PillPlan):" },
+    ru: { overdue:"Сильно задержано", total14:"Подтверждённые приёмы", shareTitle:"Мои подтверждённые приёмы", shareText:"Подтверждённые приёмы (PillPlan):" },
+    pt: { overdue:"Muito atrasado", total14:"Doses documentadas", shareTitle:"Minhas doses documentadas", shareText:"Doses documentadas (PillPlan):" }
+  };
+
+  function applyProductTerminology() {
+    if (!global.T) return false;
+    var langs = Object.keys(PRODUCT_COPY_V1);
+    for (var i = 0; i < langs.length; i++) {
+      var lang = langs[i];
+      if (!global.T[lang]) continue;
+      var patch = PRODUCT_COPY_V1[lang];
+      var keys = Object.keys(patch);
+      for (var j = 0; j < keys.length; j++) {
+        global.T[lang][keys[j]] = patch[keys[j]];
+      }
+    }
+    return true;
+  }
+
   global.PillPlanAdherenceAdapter = {
     key: key,
     getEntry: getEntry,
@@ -93,6 +121,15 @@
     undo: undo,
     entryPresentation: entryPresentation,
     medicationDaySummary: medicationDaySummary,
-    dayPresentation: dayPresentation
+    dayPresentation: dayPresentation,
+    applyProductTerminology: applyProductTerminology
   };
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("DOMContentLoaded", function () {
+      if (applyProductTerminology() && typeof global.render === "function") {
+        global.render();
+      }
+    }, { once: true });
+  }
 })(typeof window !== "undefined" ? window : globalThis);

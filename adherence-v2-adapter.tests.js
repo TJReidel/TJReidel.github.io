@@ -38,4 +38,14 @@
   legacy[X.key(date, 7, "08:00")] = true;
   assert("legacy boolean still counts as taken", X.isDone(legacy, date, 7, "08:00") === true);
   assert("legacy boolean presentation is unrated", X.entryPresentation(true).tier === "unrated");
+
+  globalThis.T = {
+    de: { overdue:"Verpasst", total14:"Compliance", shareTitle:"Mein Medikamentenplan", shareText:"Mein Medikamentenplan (PillPlan):" },
+    en: { overdue:"Overdue", total14:"Compliance", shareTitle:"My medication plan", shareText:"My medication plan (PillPlan):" }
+  };
+  assert("product terminology patch applies", X.applyProductTerminology() === true);
+  assert("German overdue wording becomes precise", globalThis.T.de.overdue === "Stark verspätet");
+  assert("German stats wording becomes documentation-based", globalThis.T.de.total14 === "Dokumentierte Einnahmen");
+  assert("German share title becomes documentation-based", globalThis.T.de.shareTitle === "Meine dokumentierten Einnahmen");
+  assert("English stats wording becomes documentation-based", globalThis.T.en.total14 === "Documented doses");
 })();
