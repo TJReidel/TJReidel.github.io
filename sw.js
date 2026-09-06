@@ -1,5 +1,5 @@
-const CACHE="pillplan-v12-historyfix1";
-const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
+const CACHE="pillplan-v12-historyfix2";
+const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
@@ -11,6 +11,21 @@ self.addEventListener("activate",e=>{
   self.clients.claim();
 });
 
+async function injectCorrectionUi(response){
+  try{
+    const text=await response.text();
+    if(text.includes("pillplan-v12-correction-ui.js")){
+      return new Response(text,{status:response.status,statusText:response.statusText,headers:response.headers});
+    }
+    const injected=text.replace("</body>",'<script src="/pillplan-v12-correction-ui.js"></script></body>');
+    const headers=new Headers(response.headers);
+    headers.delete("content-length");
+    return new Response(injected,{status:response.status,statusText:response.statusText,headers});
+  }catch(err){
+    return response;
+  }
+}
+
 self.addEventListener("fetch",e=>{
   const req=e.request;
   const url=new URL(req.url);
@@ -18,12 +33,15 @@ self.addEventListener("fetch",e=>{
   if(req.mode==="navigate" || (url.origin===self.location.origin && (url.pathname==="/" || url.pathname==="/index.html"))){
     e.respondWith(
       fetch(req)
-        .then(res=>{
+        .then(async res=>{
           const copy=res.clone();
           caches.open(CACHE).then(c=>c.put("/index.html",copy));
-          return res;
+          return injectCorrectionUi(res);
         })
-        .catch(()=>caches.match("/index.html"))
+        .catch(async()=>{
+          const cached=await caches.match("/index.html");
+          return cached?injectCorrectionUi(cached):cached;
+        })
     );
     return;
   }
