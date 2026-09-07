@@ -27,22 +27,33 @@
     }
   }
 
+  function normalizePlanIcons(root){
+    var scope=root&&root.querySelectorAll?root:document;
+    scope.querySelectorAll('.day-cell.tier-yellow .day-ico,.day-cell.tier-red .day-ico').forEach(function(el){
+      el.textContent='●';
+    });
+  }
+
   var observer=new MutationObserver(function(mutations){
+    var needsIconRefresh=false;
     mutations.forEach(function(m){
       m.addedNodes.forEach(function(node){
         if(node&&node.nodeType===1){
           if(node.id==="pp-correction-dialog") polishDialog(node);
           var nested=node.querySelector&&node.querySelector("#pp-correction-dialog");
           if(nested) polishDialog(nested);
+          needsIconRefresh=true;
         }
       });
     });
+    if(needsIconRefresh) normalizePlanIcons(document);
   });
 
   function start(){
     observer.observe(document.documentElement,{childList:true,subtree:true});
     var existing=document.getElementById("pp-correction-dialog");
     if(existing) polishDialog(existing);
+    normalizePlanIcons(document);
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true});
