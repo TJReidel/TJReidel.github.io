@@ -1,5 +1,5 @@
-const CACHE="pillplan-v12-safetytest1";
-const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
+const CACHE="pillplan-v12-schedulechange1";
+const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/pillplan-v12-schedule-change-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
@@ -11,16 +11,18 @@ self.addEventListener("activate",e=>{
   self.clients.claim();
 });
 
-async function injectCorrectionUi(response){
+async function injectUiScripts(response){
   try{
-    const text=await response.text();
-    if(text.includes("pillplan-v12-correction-ui.js")){
-      return new Response(text,{status:response.status,statusText:response.statusText,headers:response.headers});
+    let text=await response.text();
+    if(!text.includes("pillplan-v12-correction-ui.js")){
+      text=text.replace("</body>",'<script src="/pillplan-v12-correction-ui.js"></script></body>');
     }
-    const injected=text.replace("</body>",'<script src="/pillplan-v12-correction-ui.js"></script></body>');
+    if(!text.includes("pillplan-v12-schedule-change-ui.js")){
+      text=text.replace("</body>",'<script src="/pillplan-v12-schedule-change-ui.js"></script></body>');
+    }
     const headers=new Headers(response.headers);
     headers.delete("content-length");
-    return new Response(injected,{status:response.status,statusText:response.statusText,headers:headers});
+    return new Response(text,{status:response.status,statusText:response.statusText,headers:headers});
   }catch(err){
     return response;
   }
@@ -36,11 +38,11 @@ self.addEventListener("fetch",e=>{
         .then(async res=>{
           const copy=res.clone();
           caches.open(CACHE).then(c=>c.put("/index.html",copy));
-          return injectCorrectionUi(res);
+          return injectUiScripts(res);
         })
         .catch(async()=>{
           const cached=await caches.match("/index.html");
-          return cached?injectCorrectionUi(cached):cached;
+          return cached?injectUiScripts(cached):cached;
         })
     );
     return;
