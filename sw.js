@@ -1,4 +1,4 @@
-const CACHE="pillplan-v12-historyfix3";
+const CACHE="pillplan-v12-historyfix4";
 const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
@@ -20,7 +20,7 @@ async function injectCorrectionUi(response){
     const injected=text.replace("</body>",'<script src="/pillplan-v12-correction-ui.js"></script></body>');
     const headers=new Headers(response.headers);
     headers.delete("content-length");
-    return new Response(injected,{status:response.status,statusText:response.statusText,headers});
+    return new Response(injected,{status:response.status,statusText:response.statusText,headers:headers});
   }catch(err){
     return response;
   }
