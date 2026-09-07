@@ -27,33 +27,67 @@
     }
   }
 
-  function normalizePlanIcons(root){
+  function normalizeStatusSymbols(root){
     var scope=root&&root.querySelectorAll?root:document;
-    scope.querySelectorAll('.day-cell.tier-yellow .day-ico,.day-cell.tier-red .day-ico').forEach(function(el){
-      el.textContent='●';
-    });
+    scope.querySelectorAll(".day-cell.tier-yellow .day-ico,.day-cell.tier-red .day-ico").forEach(function(el){el.textContent="●";});
+    scope.querySelectorAll(".status-swatch.yellow,.status-swatch.red").forEach(function(el){el.textContent="●";});
+  }
+
+  function isProtectedDayCell(cell){
+    return cell.classList.contains("done")||cell.classList.contains("tier-yellow")||cell.classList.contains("tier-red")||cell.classList.contains("unrated")||cell.classList.contains("partial")||cell.classList.contains("pp-protected");
+  }
+
+  function openCorrection(medId,date){
+    var adapter=window.PillPlanAdherenceAdapter;
+    if(adapter&&typeof adapter.openCorrectionDialog==="function"){
+      adapter.openCorrectionDialog(medId,date);
+      return true;
+    }
+    return false;
+  }
+
+  // Safety gate runs on window capture, before the legacy document handlers.
+  // A documented intake can therefore never be toggled away by a normal tap.
+  function installSafetyGate(){
+    if(window.__pillplanDocumentedTapGateV1) return;
+    window.__pillplanDocumentedTapGateV1=true;
+    window.addEventListener("click",function(e){
+      var day=e.target&&e.target.closest?e.target.closest("[data-toggle-day]"):null;
+      if(day&&isProtectedDayCell(day)){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        openCorrection(day.dataset.toggleDay,day.dataset.date);
+        return;
+      }
+
+      var dose=e.target&&e.target.closest?e.target.closest("[data-toggle]"):null;
+      if(dose&&dose.getAttribute("aria-pressed")==="true"){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        openCorrection(dose.dataset.toggle,dose.dataset.date);
+      }
+    },true);
   }
 
   var observer=new MutationObserver(function(mutations){
-    var needsIconRefresh=false;
     mutations.forEach(function(m){
       m.addedNodes.forEach(function(node){
         if(node&&node.nodeType===1){
           if(node.id==="pp-correction-dialog") polishDialog(node);
           var nested=node.querySelector&&node.querySelector("#pp-correction-dialog");
           if(nested) polishDialog(nested);
-          needsIconRefresh=true;
+          normalizeStatusSymbols(node);
         }
       });
     });
-    if(needsIconRefresh) normalizePlanIcons(document);
   });
 
   function start(){
+    installSafetyGate();
     observer.observe(document.documentElement,{childList:true,subtree:true});
     var existing=document.getElementById("pp-correction-dialog");
     if(existing) polishDialog(existing);
-    normalizePlanIcons(document);
+    normalizeStatusSymbols(document);
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true});
