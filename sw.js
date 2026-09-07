@@ -1,5 +1,5 @@
-const CACHE="pillplan-v12-schedulechange1";
-const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/pillplan-v12-schedule-change-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
+const CACHE="pillplan-v12-localdate1";
+const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/pillplan-local-date-v1.js","/pillplan-v12-schedule-change-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
@@ -16,6 +16,9 @@ async function injectUiScripts(response){
     let text=await response.text();
     if(!text.includes("pillplan-v12-correction-ui.js")){
       text=text.replace("</body>",'<script src="/pillplan-v12-correction-ui.js"></script></body>');
+    }
+    if(!text.includes("pillplan-local-date-v1.js")){
+      text=text.replace("</body>",'<script src="/pillplan-local-date-v1.js"></script></body>');
     }
     if(!text.includes("pillplan-v12-schedule-change-ui.js")){
       text=text.replace("</body>",'<script src="/pillplan-v12-schedule-change-ui.js"></script></body>');
