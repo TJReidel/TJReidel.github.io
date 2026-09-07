@@ -1,4 +1,4 @@
-const CACHE="pillplan-v12-historyfix2";
+const CACHE="pillplan-v12-historyfix3";
 const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
