@@ -127,7 +127,7 @@
         }
         var cls="day-cell",isT=ds===td,isPast=ds<td;
         if(partial) cls+=" partial"; else if(done&&dayTier==="red") cls+=" tier-red"; else if(done&&dayTier==="yellow") cls+=" tier-yellow"; else if(done&&dayTier==="unrated") cls+=" unrated"; else if(done) cls+=" done"; else if(isPast) cls+=" past"; if(isT) cls+=" today";
-        var icon=partial?"◑":done&&dayTier==="red"?"!!":done&&dayTier==="yellow"?"!":done?"✓":"·";
+        var icon=partial?"◑":done&&(dayTier==="red"||dayTier==="yellow")?"●":done?"✓":"·";
         html+='<button class="'+cls+'" data-toggle-day="'+m.id+'" data-date="'+ds+'"><span class="day-wd">'+global.fmtDayShort(ds)+'</span><span class="day-num">'+new Date(ds+'T00:00:00').getDate()+'</span><span class="day-ico">'+icon+'</span></button>';
       }
       html+='</div></div>'; if(mi<global.S.meds.length-1) html+='<div class="plan-divider"></div>';
