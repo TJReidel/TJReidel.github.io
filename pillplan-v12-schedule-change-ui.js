@@ -1,8 +1,20 @@
 (function(global){
   "use strict";
 
-  function today(){ return new Date().toISOString().split("T")[0]; }
-  function nextDay(ds){ var d=new Date(ds+"T00:00:00"); d.setDate(d.getDate()+1); return d.toISOString().split("T")[0]; }
+  function today(){ return global.PillPlanLocalDateV1?global.PillPlanLocalDateV1.today():localDateKey(new Date()); }
+  function localDateKey(d){
+    d=d instanceof Date?d:new Date();
+    function p(n){return String(n).padStart(2,"0");}
+    return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+  }
+  function nextDay(ds){
+    if(global.PillPlanLocalDateV1) return global.PillPlanLocalDateV1.addDays(ds,1);
+    var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ds||"");
+    if(!m) return ds;
+    var d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12,0,0,0);
+    d.setDate(d.getDate()+1);
+    return localDateKey(d);
+  }
   function cloneTimes(times){ return (times||[]).slice(); }
   function sameTimes(a,b){ return JSON.stringify(a||[])===JSON.stringify(b||[]); }
   function intakeKey(mid,date,time){ return date+"_"+mid+"_"+time; }
