@@ -1,0 +1,37 @@
+/* PillPlan professional UI pass — presentation only, no data logic */
+:root{
+  --pp-bg:#f7f4ef;
+  --pp-surface:#fffdf9;
+  --pp-ink:#1d1a17;
+  --pp-muted:#716b64;
+  --pp-border:#e7e0d7;
+  --pp-teal:#3f817a;
+  --pp-teal-dark:#2f716b;
+  --pp-teal-soft:#e8f2f1;
+  --pp-red:#c94a3d;
+  --pp-yellow:#dfbd64;
+  --pp-unrated:#ded9d0;
+  --pp-shadow:0 8px 24px rgba(42,55,51,.07);
+}
+html,body{background:var(--pp-bg);color:var(--pp-ink)}
+#app{max-width:440px;padding-left:16px;padding-right:16px;padding-bottom:calc(env(safe-area-inset-bottom) + 92px)}
+.header-row{margin-bottom:16px}.logo{font-size:31px;letter-spacing:-.6px}.date-chip{font-size:15px;padding:9px 14px}
+.progress-card{border-radius:26px;padding:20px;gap:18px;box-shadow:var(--pp-shadow)}
+.ring{width:82px;height:82px;flex-basis:82px;border-width:8px}.progress-title{font-size:23px}.progress-sub{font-size:16px}.punct{font-size:15px}.streak{font-size:15px;padding:7px 11px}
+.period-select{border:1px solid var(--pp-border);border-radius:16px;padding:14px 16px;font-size:18px;box-shadow:0 2px 8px rgba(40,50,47,.03)}
+.tabs{gap:8px}.tab{border-radius:16px;padding:12px 7px;font-size:16px}.tab.active{box-shadow:0 6px 16px rgba(47,113,107,.16)}
+.section-label{font-size:12px;letter-spacing:.11em;margin:18px 3px 8px;color:#777069}
+.plan-med{background:var(--pp-surface);border:1px solid var(--pp-border);border-radius:20px;padding:14px;margin:10px 0 12px;box-shadow:0 4px 16px rgba(42,55,51,.035)}
+.plan-head{align-items:center;margin-bottom:12px}.plan-name{font-size:19px;letter-spacing:-.2px;line-height:1.15}.plan-head .small{font-size:13px;margin-top:4px}
+.med-actions{gap:6px;flex-shrink:0}.mini{min-height:38px;padding:8px 10px;border-radius:11px;font-size:13px;font-weight:750}.mini.remove{background:#fff1ee;color:#b9483c}
+.days{grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;overflow:visible}
+.day{min-height:58px;padding:6px 1px;border-radius:12px;font-size:11px;background:#f0ece6;border:1px solid transparent;transition:transform .08s ease,box-shadow .08s ease}
+.day strong{font-size:17px;margin:1px 0}.day.green{background:var(--pp-teal-dark);color:#fff}.day.yellow{background:var(--pp-yellow);color:#2b2418}.day.red{background:var(--pp-red);color:#fff}.day.unrated{background:var(--pp-unrated);color:#2f2b27}.day.today{outline:none;border:2px solid var(--pp-teal);box-shadow:0 0 0 2px rgba(63,129,122,.08)}
+.day:active{transform:scale(.97)}
+.legend{padding:0;margin:8px 0 12px;border:1px solid var(--pp-border);border-radius:16px;background:var(--pp-surface);overflow:hidden;font-weight:650;box-shadow:0 3px 12px rgba(42,55,51,.025)}
+.legend-toggle{width:100%;border:0;background:transparent;padding:14px 15px;display:flex;align-items:center;justify-content:space-between;font-size:16px;font-weight:800;color:var(--pp-ink)}
+.legend-toggle .chev{font-size:18px;transition:transform .18s ease}.legend.open .legend-toggle .chev{transform:rotate(180deg)}
+.legend-body{display:none;padding:0 14px 13px}.legend.open .legend-body{display:block}.legend-row{font-size:14px;margin-top:8px;gap:9px}.sw{width:24px;height:24px;border-radius:8px}
+.card{border:1px solid var(--pp-border);border-radius:20px;box-shadow:0 4px 16px rgba(42,55,51,.035)}
+.bottom-nav{background:rgba(247,244,239,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(223,215,205,.9);padding-top:7px}.nav{font-size:11px}.nav-icon{font-size:23px}
+@media(max-width:390px){.mini{padding:7px 8px;font-size:12px}.plan-name{font-size:18px}.day{min-height:55px}.day strong{font-size:16px}}
