@@ -3,25 +3,52 @@
 /* PillPlan Visual Audit refinement v4 */
 .tabs{display:none!important}
 .content{padding-top:2px}
-.check-btn-neutral{background:#e7e3dd;color:#3f3a35;box-shadow:none;border:2px solid #aaa39b}
-.dose-card.unrated{background:#f1efeb;border-color:#cbc5bd}
-.dose-card.unrated .dose-icon{background:#e3ded7!important;color:#3f3a35}
-.dose-card.unrated .dose-status{color:#625c55}
-.all-done{background:linear-gradient(180deg,#f0f8f6 0%,#e8f4f3 100%);border:1.5px solid rgba(42,124,116,.22);border-radius:20px;padding:18px 16px;margin-bottom:14px;box-shadow:0 3px 14px rgba(42,124,116,.07)}
+button{color:inherit}
+.check-btn-neutral{background:#ded8cf;color:#2f2a26;box-shadow:none;border:2px solid #8f877e}
+.dose-card.unrated{background:#ebe6df;border-color:#bcb3a9}
+.dose-card.unrated .dose-icon{background:#ddd6cd!important;color:#2f2a26}
+.dose-card.unrated .dose-status{color:#4f4943}
+.all-done{background:linear-gradient(180deg,#eef7f5 0%,#e3f0ee 100%);border:1.5px solid rgba(42,124,116,.34);border-radius:20px;padding:18px 16px;margin-bottom:14px;box-shadow:0 3px 14px rgba(42,124,116,.07)}
 .all-done-icon{width:44px;height:44px;margin-bottom:10px}
 .all-done-text{font-size:20px}
 .all-done-sub{font-size:13px;color:var(--ink2);margin-top:5px}
 .plan-med-header{position:relative;padding-right:2px}
 .med-menu{position:relative;flex-shrink:0}
-.med-menu>summary{list-style:none;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cream2);color:var(--ink2);font-size:18px;font-weight:800;letter-spacing:1px;cursor:pointer}
+.med-menu>summary{list-style:none;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e8e1d7;color:#302b27;font-size:18px;font-weight:800;letter-spacing:1px;cursor:pointer;border:1px solid #cfc5ba}
 .med-menu>summary::-webkit-details-marker{display:none}
 .med-menu[open]>summary{background:var(--teal-bg);color:var(--teal)}
-.med-menu-popover{position:absolute;right:0;top:44px;min-width:150px;background:#fff;border:1px solid #e3ddd4;border-radius:14px;padding:6px;box-shadow:0 10px 30px rgba(26,22,18,.16);z-index:30}
+.med-menu-popover{position:absolute;right:0;top:44px;min-width:150px;background:#fff;border:1px solid #d3c9be;border-radius:14px;padding:6px;box-shadow:0 10px 30px rgba(26,22,18,.16);z-index:30}
 .med-menu-popover button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:11px 12px;border-radius:10px;font-size:14px;font-weight:700}
 .med-menu-popover button:active{background:var(--cream2)}
 .med-menu-popover button.danger{color:var(--red)}
 .med-menu-popover button:disabled{opacity:.4}
-.bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
-.nav{font-size:9.5px;line-height:1.15;min-width:0}
+
+/* Accessibility pass: retain original v1.1 palette, but increase separation and contrast. */
+.period-select{background:#ece6dd;border-color:#cfc5ba;color:#1a1612;box-shadow:none}
+.status-legend{background:#f1ebe3;border-color:#cfc5ba}
+.status-legend summary{color:#1a1612}
+.status-legend-body{border-top-color:#cfc5ba;background:#f7f3ed}
+.section-label{color:#3f3934;font-weight:800}
+.plan-med{padding:14px 0 18px;border-bottom:1px solid #d8cfc4;margin-bottom:8px}
+.plan-med:last-of-type{border-bottom:0}
+.plan-med-name{color:#171411}
+.plan-med-time{color:#4d4741}
+.day-cell{background:#e5ddd2;border:1.5px solid #c8bdb0;color:#171411}
+.day-wd{color:#38322d;font-weight:900}
+.day-num{color:#171411;font-weight:900}
+.day-ico{color:#332e29}
+.day-cell.today{border-color:#6f6962;border-width:3px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
+.day-cell.done{background:var(--teal);border-color:#1e625c;color:#fff}
+.day-cell.tier-yellow{background:#d7b46a;border-color:#8b692b;color:#171411}
+.day-cell.tier-red{background:#c94a3b;border-color:#8f291f;color:#fff}
+.day-cell.unrated{background:#d9d2c9;border-color:#777068;color:#24201d}
+.day-cell.partial{background:#d8ebe8;border-color:#2a7c74;border-width:3px}
+.day-cell.done .day-wd,.day-cell.done .day-num,.day-cell.done .day-ico,.day-cell.tier-red .day-wd,.day-cell.tier-red .day-num,.day-cell.tier-red .day-ico{color:#fff}
+.day-cell.tier-yellow .day-wd,.day-cell.tier-yellow .day-num,.day-cell.tier-yellow .day-ico{color:#171411}
+.day-cell.unrated .day-wd,.day-cell.unrated .day-num,.day-cell.unrated .day-ico{color:#24201d}
+.status-swatch.open{background:#e5ddd2;border-color:#9d9287;color:#1f1b18}
+.bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));background:rgba(240,235,226,.98);border-top-color:#cfc5ba}
+.nav{font-size:9.5px;line-height:1.15;min-width:0;color:#3d3732}
+.nav.active{color:#1f7069}
 .nav span:last-child{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:390px){.nav{font-size:9px}.nav-icon{font-size:21px}.content{padding-left:16px;padding-right:16px}}
