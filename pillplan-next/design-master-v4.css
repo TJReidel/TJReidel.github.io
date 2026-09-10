@@ -51,4 +51,13 @@ button{color:inherit}
 .nav{font-size:9.5px;line-height:1.15;min-width:0;color:#3d3732}
 .nav.active{color:#1f7069}
 .nav span:last-child{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media(max-width:390px){.nav{font-size:9px}.nav-icon{font-size:21px}.content{padding-left:16px;padding-right:16px}}
+.compact-select{min-height:42px;max-width:155px;padding:8px 30px 8px 10px;border:1.5px solid #bdb2a6;border-radius:12px;background:#ece6dd;color:#171411;font-weight:700}
+
+/* RTL support for Arabic */
+[dir="rtl"] .header-row,[dir="rtl"] .progress-card,[dir="rtl"] .plan-med-header,[dir="rtl"] .settings-row,[dir="rtl"] .streak-row,[dir="rtl"] .next-banner,[dir="rtl"] .disclaimer{flex-direction:row-reverse}
+[dir="rtl"] .plan-med-name,[dir="rtl"] .plan-med-time,[dir="rtl"] .dose-name,[dir="rtl"] .dose-time,[dir="rtl"] .dose-status,[dir="rtl"] .doctor-note,[dir="rtl"] .settings-row-label,[dir="rtl"] .settings-row-sub,[dir="rtl"] .form-label,[dir="rtl"] .form-input{text-align:right}
+[dir="rtl"] .med-menu-popover{right:auto;left:0}
+[dir="rtl"] .med-menu-popover button{text-align:right}
+[dir="rtl"] .compact-select{padding:8px 10px 8px 30px}
+
+@media(max-width:390px){.nav{font-size:9px}.nav-icon{font-size:21px}.content{padding-left:16px;padding-right:16px}.compact-select{max-width:140px}}
