@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>PillPlan Datenrettung</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f4ef;color:#1a1612;margin:0;padding:24px}
+.wrap{max-width:520px;margin:0 auto}.card{background:#fff;border:1px solid #e8e1d8;border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+h1{font-size:28px;margin:0 0 8px;color:#2a7c74}.muted{color:#6d665f;line-height:1.5}.ok{color:#1f6f4a;font-weight:700}.warn{color:#a33a2b;font-weight:700}
+button{width:100%;min-height:54px;border:0;border-radius:14px;background:#2a7c74;color:#fff;font-size:17px;font-weight:700;margin-top:12px}button.secondary{background:#efe9e0;color:#1a1612}
+pre{white-space:pre-wrap;word-break:break-word;background:#f3efe9;border-radius:12px;padding:12px;font-size:12px;max-height:220px;overflow:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>PillPlan Datenrettung</h1>
+    <p class="muted">Diese Seite verändert nichts. Sie liest nur den lokalen Browser-Speicher dieser PillPlan-Domain aus und kann eine Sicherungsdatei erzeugen.</p>
+    <p id="status" class="muted">Lokalen Speicher wird geprüft …</p>
+  </div>
+  <div class="card">
+    <button id="exportBtn">Sicherungsdatei erstellen</button>
+    <button id="copyBtn" class="secondary">Rohdaten kopieren</button>
+    <pre id="preview">Noch keine Daten gelesen.</pre>
+  </div>
+</div>
+<script>
+(function(){
+  const status=document.getElementById('status');
+  const preview=document.getElementById('preview');
+  function snapshot(){
+    const data={meta:{origin:location.origin,createdAt:new Date().toISOString(),userAgent:navigator.userAgent},localStorage:{}};
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      data.localStorage[k]=localStorage.getItem(k);
+    }
+    return data;
+  }
+  function refresh(){
+    try{
+      const data=snapshot();
+      const n=Object.keys(data.localStorage).length;
+      status.innerHTML=n?'<span class="ok">Lokale Daten gefunden: '+n+' Speicher-Einträge.</span>':'<span class="warn">Keine lokalen PillPlan-Daten in diesem Browser-Kontext gefunden.</span>';
+      preview.textContent=JSON.stringify(data,null,2);
+      return data;
+    }catch(e){
+      status.innerHTML='<span class="warn">Lokaler Speicher konnte nicht gelesen werden.</span>';
+      preview.textContent=String(e);
+      return null;
+    }
+  }
+  document.getElementById('exportBtn').addEventListener('click',()=>{
+    const data=refresh(); if(!data) return;
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='PillPlan_Backup_'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  });
+  document.getElementById('copyBtn').addEventListener('click',async()=>{
+    const data=refresh(); if(!data) return;
+    try{await navigator.clipboard.writeText(JSON.stringify(data)); status.innerHTML='<span class="ok">Rohdaten kopiert.</span>';}catch(e){status.innerHTML='<span class="warn">Kopieren nicht möglich. Bitte Sicherungsdatei verwenden.</span>';}
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>
