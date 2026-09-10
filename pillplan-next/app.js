@@ -1,77 +1,37 @@
 const DB_NAME='pillplan-next-db';
 const DB_VERSION=1;
-let db;
-let view='today';
-let deferredInstallPrompt=null;
-
-function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true}
-function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)}
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;render();});
-window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;render();});
-
-async function installApp(){
-  if(isStandalone()) return;
-  if(deferredInstallPrompt){
-    deferredInstallPrompt.prompt();
-    try{await deferredInstallPrompt.userChoice}catch(e){}
-    deferredInstallPrompt=null;
-    render();
-    return;
-  }
-  if(isIOS() && navigator.share){
-    try{
-      await navigator.share({title:'PillPlan',text:'PillPlan zum Home-Bildschirm hinzufügen',url:window.location.href});
-    }catch(e){if(e && e.name!=='AbortError') alert('Safari konnte das Teilen-Menü nicht öffnen.');}
-    return;
-  }
-  alert('Installation ist in diesem Browser nicht direkt verfügbar. Öffne PillPlan in Safari und wähle Teilen → Zum Home-Bildschirm.');
-}
-
+let db; let view='today'; let period=7;
 function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('meds'))d.createObjectStore('meds',{keyPath:'id'});if(!d.objectStoreNames.contains('events')){const s=d.createObjectStore('events',{keyPath:'eventId'});s.createIndex('slot','slot',{unique:false});s.createIndex('createdAt','createdAt',{unique:false});}if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta',{keyPath:'key'});};r.onsuccess=()=>{db=r.result;resolve(db)};r.onerror=()=>reject(r.error);});}
 function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
 function all(store){return new Promise((res,rej)=>{const r=tx(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}
 function put(store,obj){return new Promise((res,rej)=>{const r=tx(store,'readwrite').put(obj);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
 function clear(store){return new Promise((res,rej)=>{const r=tx(store,'readwrite').clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
-function today(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function today(){const d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
 function slotKey(mid,date,time){return `${date}_${mid}_${time}`}
-function uid(){return (crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random())}
+function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random()}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtDate(ds=today()){return new Date(ds+'T00:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}
 async function latestEvents(){const ev=await all('events');ev.sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));const map={};for(const e of ev)map[e.slot]=e;return map}
 function tierForLegacy(v){if(v===true)return 'unrated';if(v===false||v==null)return null;if(typeof v==='object'){if(v.taken===false)return null;return v.tier||'unrated'}return null}
-async function importBackup(file){const text=await file.text();let obj=JSON.parse(text);let state=obj;if(obj.localStorage&&obj.localStorage.pillplan_v4){state=typeof obj.localStorage.pillplan_v4==='string'?JSON.parse(obj.localStorage.pillplan_v4):obj.localStorage.pillplan_v4;}if(!state||!Array.isArray(state.meds)||typeof state.taken!=='object')throw new Error('Ungültige PillPlan-Sicherung');await clear('meds');await clear('events');for(const m of state.meds){await put('meds',{id:m.id,name:m.name,times:m.times||[],color:m.color||'#2a7c74',startDate:m.startDate||null,scheduleHistory:m.scheduleHistory||[]});}for(const [slot,val] of Object.entries(state.taken||{})){const tier=tierForLegacy(val);if(!tier)continue;await put('events',{eventId:uid(),slot,type:'taken',tier,createdAt:(val&&val.takenAt)||new Date().toISOString(),legacy:true});}await put('meta',{key:'importedAt',value:new Date().toISOString()});render();}
-async function exportBackup(){const meds=await all('meds'),events=await all('events'),meta=await all('meta');const blob=new Blob([JSON.stringify({schema:'pillplan-next-v1',exportedAt:new Date().toISOString(),meds,events,meta},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`PillPlan_Next_Backup_${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-async function toggle(mid,date,time){const slot=slotKey(mid,date,time);const map=await latestEvents();const current=map[slot];await put('events',{eventId:uid(),slot,type:(current&&current.type==='taken')?'undo':'taken',tier:'unrated',createdAt:new Date().toISOString()});render()}
-async function addMed(name,time){if(!name||!time)return;await put('meds',{id:Date.now(),name:name.trim(),times:[time],color:'#2a7c74',startDate:today(),scheduleHistory:[{from:today(),times:[time]}]});view='today';render()}
+async function importBackup(file){const text=await file.text();let obj=JSON.parse(text),state=obj;if(obj.localStorage&&obj.localStorage.pillplan_v4)state=typeof obj.localStorage.pillplan_v4==='string'?JSON.parse(obj.localStorage.pillplan_v4):obj.localStorage.pillplan_v4;if(!state||!Array.isArray(state.meds)||typeof state.taken!=='object')throw new Error('Ungültige PillPlan-Sicherung');await clear('meds');await clear('events');for(const m of state.meds)await put('meds',{id:m.id,name:m.name,times:m.times||[],color:m.color||'#2a7c74',startDate:m.startDate||null,scheduleHistory:m.scheduleHistory||[]});for(const [slot,val] of Object.entries(state.taken||{})){const tier=tierForLegacy(val);if(!tier)continue;await put('events',{eventId:uid(),slot,type:'taken',tier,createdAt:(val&&val.takenAt)||new Date().toISOString(),legacy:true});}await put('meta',{key:'importedAt',value:new Date().toISOString()});await render()}
+async function exportBackup(){const meds=await all('meds'),events=await all('events'),meta=await all('meta');const blob=new Blob([JSON.stringify({schema:'pillplan-next-v2',exportedAt:new Date().toISOString(),meds,events,meta},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`PillPlan_Backup_${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function toggle(mid,date,time){const slot=slotKey(mid,date,time),map=await latestEvents(),current=map[slot];let tier='green';if(!(current&&current.type==='taken')){const [h,m]=time.split(':').map(Number),now=new Date(),diff=now.getHours()*60+now.getMinutes()-(h*60+m);tier=diff>=45?'red':diff>=30?'yellow':'green'}await put('events',{eventId:uid(),slot,type:(current&&current.type==='taken')?'undo':'taken',tier,createdAt:new Date().toISOString()});await render()}
+async function addMed(name,time){if(!name||!time)return;await put('meds',{id:Date.now(),name:name.trim(),times:[time],color:'#2a7c74',startDate:today(),scheduleHistory:[{from:today(),times:[time]}]});view='today';await render()}
 function pastDays(n){const out=[];for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');out.push(`${y}-${m}-${day}`)}return out}
-async function stats(){const meds=await all('meds'),map=await latestEvents(),td=today();let tot=0,done=0;for(const m of meds)for(const t of m.times){tot++;const e=map[slotKey(m.id,td,t)];if(e&&e.type==='taken')done++;}return{tot,done,pct:tot?Math.round(done/tot*100):0}}
-
-async function render(){
-  const app=document.getElementById('app');
-  const meds=await all('meds'),map=await latestEvents(),s=await stats();
-  let html=`<h1>PillPlan</h1><div class="sub">Next · verlaufsstarker Kern</div><div class="status"><div>Heute</div><strong>${s.done}/${s.tot} · ${s.pct}%</strong></div><div class="tabs"><button data-v="today" class="${view==='today'?'active':''}">Heute</button><button data-v="plan" class="${view==='plan'?'active':''}">Plan</button><button data-v="data" class="${view==='data'?'active':''}">Daten</button></div>`;
-
-  if(!isStandalone() && (isIOS() || deferredInstallPrompt)){
-    html+=`<div class="card"><div class="name">📲 PillPlan installieren</div><div class="time" style="margin:6px 0 12px">${isIOS()?'Öffnet das iOS-Teilen-Menü. Dort „Zum Home-Bildschirm“ wählen.':'Als App auf diesem Gerät installieren.'}</div><button id="install-app" class="btn primary">App installieren</button></div>`;
-  }
-
-  if(view==='today'){
-    if(!meds.length)html+=`<div class="empty">Noch keine Medikamente. Importiere zuerst deine Sicherung oder füge ein Medikament hinzu.</div>`;
-    for(const m of meds)for(const t of m.times){const slot=slotKey(m.id,today(),t),e=map[slot],on=e&&e.type==='taken';html+=`<div class="card dose"><div class="grow"><div class="name">${esc(m.name)}</div><div class="time">${esc(t)}</div></div><button class="check ${on?'on':''}" data-toggle="${m.id}" data-time="${esc(t)}">${on?'✓':'○'}</button></div>`}
-    html+=`<div class="card"><h2>Medikament hinzufügen</h2><div class="actions"><input id="med-name" class="file" placeholder="Name"><input id="med-time" class="file" type="time" value="08:00"><button id="add-med" class="btn primary">Hinzufügen</button></div></div>`;
-  }
-  if(view==='plan'){
-    const days=pastDays(7);if(!meds.length)html+=`<div class="empty">Noch keine Daten.</div>`;
-    for(const m of meds){html+=`<div class="card"><div class="name">${esc(m.name)}</div><div class="grid">`;for(const d of days){let cls='',mark='·';for(const t of m.times){const e=map[slotKey(m.id,d,t)];if(e&&e.type==='taken'){cls=e.tier==='red'?'red':e.tier==='yellow'?'yellow':'green';mark='✓';break}}const dt=new Date(d+'T00:00:00');html+=`<div class="day ${cls}"><div>${dt.toLocaleDateString('de-DE',{weekday:'short'}).slice(0,2)}</div><strong>${dt.getDate()}</strong><div>${mark}</div></div>`}html+=`</div></div>`}
-  }
-  if(view==='data')html+=`<div class="card"><h2>Daten sichern / übernehmen</h2><div class="ok">PillPlan Next speichert den Verlauf als unveränderbares Ereignisprotokoll in IndexedDB. Kein Demo-Datensatz.</div><div class="actions" style="margin-top:12px"><input id="backup-file" class="file" type="file" accept="application/json,.json"><button id="import-btn" class="btn primary">Backup importieren</button><button id="export-btn" class="btn">Backup exportieren</button></div></div><div class="notice">Für wirklich geräteübergreifende, verlustsichere Historie folgt als nächster Baustein Server-Sync. Diese Version trennt zunächst sauber App, Speicher und Service Worker vom alten PillPlan.</div>`;
-
-  app.innerHTML=html;
-  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render()});
-  document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>toggle(Number(b.dataset.toggle),today(),b.dataset.time));
-  const add=document.getElementById('add-med');if(add)add.onclick=()=>addMed(document.getElementById('med-name').value,document.getElementById('med-time').value);
-  const imp=document.getElementById('import-btn');if(imp)imp.onclick=async()=>{try{const f=document.getElementById('backup-file').files[0];if(!f)throw new Error('Bitte Backup-Datei auswählen');await importBackup(f);alert('Import erfolgreich');}catch(e){alert(e.message)}};
-  const exp=document.getElementById('export-btn');if(exp)exp.onclick=exportBackup;
-  const install=document.getElementById('install-app');if(install)install.onclick=installApp;
+async function todayStats(){const meds=await all('meds'),map=await latestEvents(),td=today();let tot=0,done=0;for(const m of meds)for(const t of m.times){tot++;const e=map[slotKey(m.id,td,t)];if(e&&e.type==='taken')done++;}return{tot,done,pct:tot?Math.round(done/tot*100):0}}
+async function streak(){const meds=await all('meds'),map=await latestEvents();if(!meds.length)return 0;let s=0;for(let i=0;i<365;i++){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);let ok=true;for(const m of meds)for(const t of m.times){const e=map[slotKey(m.id,ds,t)];if(!(e&&e.type==='taken'))ok=false}if(ok)s++;else if(i>0)break;}return s}
+function classifyDay(m,d,map){let any=false,worst='green';for(const t of m.times){const e=map[slotKey(m.id,d,t)];if(e&&e.type==='taken'){any=true;if(e.tier==='red')worst='red';else if(e.tier==='yellow'&&worst!=='red')worst='yellow';}}return any?worst:''}
+async function render(){const app=document.getElementById('app'),meds=await all('meds'),map=await latestEvents(),s=await todayStats(),st=await streak(),td=today();let html=`<div class="header-row"><div class="logo">Pill<span>Plan</span></div><div class="date-chip">${fmtDate()}</div></div><div class="progress-card"><div class="ring">${s.pct}%</div><div><div class="progress-title">${view==='plan'?'Dokumentation':'Heute'}</div><div class="progress-sub">${s.done} / ${s.tot} dokumentiert</div><div class="streak">🔥 ${st} ${st===1?'Tag':'Tage'} in Folge</div></div></div><select class="period-select" id="period"><option value="7" ${period===7?'selected':''}>1 Woche</option><option value="14" ${period===14?'selected':''}>2 Wochen</option><option value="30" ${period===30?'selected':''}>1 Monat</option></select><div class="tabs"><button class="tab ${view==='today'?'active':''}" data-v="today">💊 Heute</button><button class="tab ${view==='plan'?'active':''}" data-v="plan">📅 Plan</button><button class="tab ${view==='data'?'active':''}" data-v="data">⚙ Daten</button></div><main class="content">`;
+if(view==='today'){
+ if(!meds.length)html+=`<div class="empty">Noch keine Medikamente. Über „Daten“ kannst du eine Sicherung importieren.</div>`;
+ for(const m of meds)for(const t of m.times){const e=map[slotKey(m.id,td,t)],on=e&&e.type==='taken';html+=`<div class="card dose"><div class="dose-icon">${on?'✅':'💊'}</div><div class="grow"><div class="name">${esc(m.name)}</div><div class="time">${esc(t)}</div><div class="statusline">${on?'Dokumentiert':'Offen'}</div></div><button class="check ${on?'on':''}" data-toggle="${m.id}" data-time="${esc(t)}">${on?'✓':'○'}</button></div>`}
+ html+=`<div class="card"><div class="form-title">Medikament hinzufügen</div><input id="med-name" class="field" placeholder="Name"><input id="med-time" class="field" type="time" value="08:00"><button id="add-med" class="btn primary">Hinzufügen</button></div>`;
 }
-
-(async()=>{await openDB();if('serviceWorker'in navigator)navigator.serviceWorker.register('/pillplan-next/sw.js',{scope:'/pillplan-next/'}).catch(()=>{});render();})();
+if(view==='plan'){
+ html+=`<div class="legend">Was bedeuten die Farben?</div>`;const days=pastDays(period);
+ for(const m of meds){html+=`<div class="plan-med"><div class="plan-head"><div><div class="plan-name">${esc(m.name)}</div><div class="small">${m.times.join(' · ')}</div></div></div><div class="days">`;for(const d of days.slice(-7)){const cls=classifyDay(m,d,map),dt=new Date(d+'T00:00:00');html+=`<div class="day ${cls} ${d===td?'today':''}"><div>${dt.toLocaleDateString('de-DE',{weekday:'short'}).slice(0,2)}</div><strong>${dt.getDate()}</strong><div>${cls?'✓':'·'}</div></div>`}html+=`</div></div>`}
+}
+if(view==='data')html+=`<div class="card"><div class="form-title">Daten sichern / übernehmen</div><div class="info">Verlauf wird als Ereignisprotokoll in IndexedDB gespeichert. Keine Demo-Daten.</div><input id="backup-file" class="field" type="file" accept="application/json,.json"><button id="import-btn" class="btn primary">Backup importieren</button><button id="export-btn" class="btn secondary">Backup exportieren</button></div><div class="warn">Nächster Ausbau: automatische, geräteübergreifende Sicherung. Die lokale Historie bleibt bis dahin bewusst vom alten PillPlan getrennt.</div>`;
+html+=`</main><nav class="bottom-nav"><button class="nav ${view==='today'?'active':''}" data-v="today"><span class="nav-icon">💊</span>HEUTE</button><button class="nav ${view==='plan'?'active':''}" data-v="plan"><span class="nav-icon">📅</span>PLAN</button><button class="nav" id="nav-add"><span class="nav-icon">＋</span>HINZUFÜGEN</button><button class="nav ${view==='data'?'active':''}" data-v="data"><span class="nav-icon">⚙️</span>DATEN</button></nav>`;app.innerHTML=html;
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render()});document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>toggle(Number(b.dataset.toggle),td,b.dataset.time));const p=document.getElementById('period');if(p)p.onchange=()=>{period=Number(p.value);render()};const add=document.getElementById('add-med');if(add)add.onclick=()=>addMed(document.getElementById('med-name').value,document.getElementById('med-time').value);const na=document.getElementById('nav-add');if(na)na.onclick=()=>{view='today';render().then(()=>document.getElementById('med-name')?.focus())};const imp=document.getElementById('import-btn');if(imp)imp.onclick=async()=>{try{const f=document.getElementById('backup-file').files[0];if(!f)throw new Error('Bitte Backup-Datei auswählen');await importBackup(f);alert('Import erfolgreich');}catch(e){alert(e.message)}};const exp=document.getElementById('export-btn');if(exp)exp.onclick=exportBackup;}
+(async()=>{await openDB();if('serviceWorker'in navigator)navigator.serviceWorker.register('/pillplan-next/sw.js',{scope:'/pillplan-next/'}).catch(()=>{});await render();})();
