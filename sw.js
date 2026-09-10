@@ -1,5 +1,5 @@
-const CACHE="pillplan-v12-restore1";
-const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/pillplan-local-date-v1.js","/pillplan-v12-schedule-change-ui.js","/pillplan-v12-medication-end-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
+const CACHE="pillplan-v12-init1";
+const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-bootstrap-v1.js","/pillplan-v12-correction-ui.js","/pillplan-local-date-v1.js","/pillplan-v12-schedule-change-ui.js","/pillplan-v12-medication-end-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
@@ -11,20 +11,11 @@ self.addEventListener("activate",e=>{
   self.clients.claim();
 });
 
-async function injectUiScripts(response){
+async function injectBootstrap(response){
   try{
     let text=await response.text();
-    if(!text.includes("pillplan-v12-correction-ui.js")){
-      text=text.replace("</body>",'<script src="/pillplan-v12-correction-ui.js"></script></body>');
-    }
-    if(!text.includes("pillplan-local-date-v1.js")){
-      text=text.replace("</body>",'<script src="/pillplan-local-date-v1.js"></script></body>');
-    }
-    if(!text.includes("pillplan-v12-schedule-change-ui.js")){
-      text=text.replace("</body>",'<script src="/pillplan-v12-schedule-change-ui.js"></script></body>');
-    }
-    if(!text.includes("pillplan-v12-medication-end-ui.js")){
-      text=text.replace("</body>",'<script src="/pillplan-v12-medication-end-ui.js"></script></body>');
+    if(!text.includes("pillplan-bootstrap-v1.js")){
+      text=text.replace("</body>",'<script src="/pillplan-bootstrap-v1.js"></script></body>');
     }
     const headers=new Headers(response.headers);
     headers.delete("content-length");
@@ -50,11 +41,11 @@ self.addEventListener("fetch",e=>{
         .then(async res=>{
           const copy=res.clone();
           caches.open(CACHE).then(c=>c.put("/index.html",copy));
-          return injectUiScripts(res);
+          return injectBootstrap(res);
         })
         .catch(async()=>{
           const cached=await caches.match("/index.html");
-          return cached?injectUiScripts(cached):cached;
+          return cached?injectBootstrap(cached):cached;
         })
     );
     return;
