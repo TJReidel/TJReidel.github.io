@@ -5,6 +5,23 @@
   function upsertSchedule(m,from,times){const h=Array.isArray(m.scheduleHistory)?m.scheduleHistory.slice():[];const idx=h.findIndex(x=>x.from===from),entry={from,times:normalizeTimes(times)};if(idx>=0)h[idx]=entry;else h.push(entry);h.sort((a,b)=>a.from.localeCompare(b.from));m.scheduleHistory=h;}
   async function anyDocumented(m,ds,times){const map=await latestEvents();return times.some(t=>{const e=map[slotKey(m.id,ds,t)];return e&&e.type==='taken';});}
 
+  // Schutz vor versehentlichem Entfernen bereits dokumentierter Einnahmen.
+  toggle=async function(mid,date,time,forceTier=null){
+    const slot=slotKey(mid,date,time),map=await latestEvents(),current=map[slot];
+    const turningOn=!(current&&current.type==='taken');
+    if(!turningOn){
+      const m=await getOne('meds',mid);
+      const label=m?.name||'Diese Einnahme';
+      const dateLabel=new Date(date+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const ok=confirm(`${label} am ${dateLabel} um ${time} wurde bereits als eingenommen dokumentiert.\n\nDiesen Eintrag wirklich zurücknehmen?`);
+      if(!ok)return;
+    }
+    const tier=turningOn?(forceTier||computeTier(time)):'unrated';
+    await put('events',{eventId:uid(),slot,type:turningOn?'taken':'undo',tier,createdAt:new Date().toISOString()});
+    await render();
+  };
+  window.toggle=toggle;
+
   editMed=async function(id){
     const m=await getOne('meds',id);if(!m||m.endDate)return;
     const oldTimes=timesForDate(m,today());
