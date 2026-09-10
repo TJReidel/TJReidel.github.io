@@ -9,6 +9,7 @@
     const now=new Date(today()+'T12:00:00');
     return Math.ceil((target-now)/86400000);
   }
+
   function praiseText(s,st){
     if(!s.tot) return '';
     if(s.done===0) return 'Guten Morgen. Dein erster Check wartet.';
@@ -19,15 +20,73 @@
     if(st>=3) return `${st} Tage in Folge. Gute Routine.`;
     return `${s.done} von ${s.tot}. Du bleibst dran — das zählt.`;
   }
+
+  async function buildSummary(){
+    const meds=await all('meds');
+    const s=await todayStats();
+    const st=await streak();
+    const lines=[`PillPlan – ${fmtDate()}`,`Heute: ${s.done}/${s.tot} dokumentiert (${s.pct}%)`,`Serie: ${st} ${st===1?'Tag':'Tage'}`,''];
+    meds.forEach(m=>{
+      const times=normalizeTimes(m.times||[]).join(', ');
+      let line=`${m.name}${m.dose?` ${m.dose}`:''}: ${times}`;
+      if(m.doctorInstructions) line+=` · ${m.doctorInstructions}`;
+      if(m.expiryDate) line+=` · MHD ${m.expiryDate}`;
+      lines.push(line);
+    });
+    return lines.join('\n');
+  }
+
+  async function shareSummary(){
+    const text=await buildSummary();
+    try{
+      if(navigator.share){await navigator.share({title:'PillPlan',text});}
+      else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert('PillPlan-Zusammenfassung wurde kopiert.');}
+      else alert(text);
+    }catch(e){if(e?.name!=='AbortError')alert('Teilen war nicht möglich.');}
+  }
+
+  async function testNotification(){
+    if(!('Notification' in window)){alert('Benachrichtigungen werden in diesem Browser nicht unterstützt.');return;}
+    let permission=Notification.permission;
+    if(permission==='default') permission=await Notification.requestPermission();
+    if(permission!=='granted'){alert('Benachrichtigungen sind nicht freigegeben.');return;}
+    try{
+      const reg=await navigator.serviceWorker?.ready;
+      if(reg?.showNotification) await reg.showNotification('PillPlan',{body:'Test erfolgreich. PillPlan kann Benachrichtigungen anzeigen.',icon:'/icon.png'});
+      else new Notification('PillPlan',{body:'Test erfolgreich. PillPlan kann Benachrichtigungen anzeigen.'});
+    }catch(e){alert('Testbenachrichtigung konnte nicht angezeigt werden.');}
+  }
+
+  function startVoiceInput(){
+    const field=document.getElementById('med-name');
+    if(!field)return;
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){
+      field.focus();
+      alert('Direkte Spracheingabe ist hier nicht verfügbar. Nutze das Mikrofon der iPhone-Tastatur.');
+      return;
+    }
+    const r=new SR();
+    r.lang='de-DE'; r.interimResults=false; r.maxAlternatives=1;
+    const b=document.getElementById('voice-med');
+    if(b){b.textContent='🎙️';b.classList.add('listening');}
+    r.onresult=e=>{const t=e.results?.[0]?.[0]?.transcript||'';if(t)field.value=t.trim();};
+    r.onerror=()=>alert('Spracheingabe konnte nicht gestartet werden.');
+    r.onend=()=>{if(b){b.textContent='🎤';b.classList.remove('listening');}};
+    r.start();
+  }
+
   async function addMed(name,times,color='#2a7c74'){
     times=normalizeTimes(times); if(!name||!times.length)return;
     const id=Date.now();
     const instructions=(document.getElementById('doctor-instructions')?.value||'').trim();
     const dose=(document.getElementById('med-dose')?.value||'').trim();
     const expiry=document.getElementById('med-expiry')?.value||'';
-    await put('meds',{id,name:name.trim(),times,color,startDate:today(),scheduleHistory:[{from:today(),times:[...times]}],doctorInstructions:instructions,dose,expiryDate:expiry});
-    view='today'; await baseRender();
+    const chosenColor=document.getElementById('med-color')?.value||color;
+    await put('meds',{id,name:name.trim(),times,color:chosenColor,startDate:today(),scheduleHistory:[{from:today(),times:[...times]}],doctorInstructions:instructions,dose,expiryDate:expiry});
+    view='today'; await render();
   }
+
   async function editMed(id){
     const m=await getOne('meds',id); if(!m)return;
     const name=prompt('Medikament bearbeiten – Name',m.name); if(name===null)return;
@@ -40,9 +99,11 @@
     if(expiry && !/^\d{4}-\d{2}-\d{2}$/.test(expiry)){alert('Bitte MHD als JJJJ-MM-TT eingeben.');return}
     m.name=name.trim()||m.name; m.times=times; m.dose=dose.trim(); m.doctorInstructions=instructions.trim(); m.expiryDate=expiry;
     m.scheduleHistory=[...(m.scheduleHistory||[]),{from:today(),times:[...times]}];
-    await put('meds',m); await baseRender();
+    await put('meds',m); await render();
   }
-  window.addMed=addMed; window.editMed=editMed;
+
+  window.addMed=addMed;
+  window.editMed=editMed;
 
   async function enhance(){
     const app=document.getElementById('app'); if(!app) return;
@@ -53,45 +114,83 @@
       const opt=document.createElement('option'); opt.value='21'; opt.textContent='3 Wochen';
       period.insertBefore(opt,period.querySelector('option[value="30"]'));
     }
+    if(period===21){
+      const label=document.querySelector('.section-label');
+      if(label) label.textContent=label.textContent.replace('1 MONAT','3 WOCHEN');
+    }
 
     const content=document.querySelector('.content');
     if(view==='today' && content && !document.getElementById('daily-praise')){
       const p=document.createElement('div'); p.id='daily-praise'; p.className='praise-card'; p.textContent=praiseText(s,st); content.prepend(p);
       const warnings=[];
-      meds.forEach(m=>{const d=daysUntil(m.expiryDate); if(d!==null && d<=30){warnings.push(d<0?`⚠️ ${m.name}: MHD überschritten`:`📅 ${m.name}: MHD in ${d} Tagen`);}});
+      meds.forEach(m=>{const d=daysUntil(m.expiryDate);if(d!==null&&d<=30){warnings.push(d<0?`⚠️ ${m.name}: MHD überschritten`:`📅 ${m.name}: MHD in ${d} Tagen`);}});
       if(warnings.length){const w=document.createElement('div');w.className='expiry-card';w.innerHTML=warnings.map(x=>`<div>${esc(x)}</div>`).join('');p.after(w);}
       meds.forEach(m=>{
-        if(!m.doctorInstructions && !m.dose && !m.expiryDate)return;
+        if(!m.doctorInstructions&&!m.dose&&!m.expiryDate)return;
         const cards=[...document.querySelectorAll('.dose')];
         const first=cards.find(c=>c.querySelector('.name')?.textContent===m.name);
-        if(first && !first.querySelector('.doctor-note')){
-          const note=document.createElement('div'); note.className='doctor-note';
-          let text=''; if(m.dose) text+=`Dosis: ${m.dose}`; if(m.doctorInstructions) text+=(text?' · ':'')+m.doctorInstructions; if(m.expiryDate) text+=(text?' · ':'')+`MHD ${m.expiryDate}`;
-          note.textContent=text; first.querySelector('.grow')?.appendChild(note);
+        if(first&&!first.querySelector('.doctor-note')){
+          const note=document.createElement('div');note.className='doctor-note';
+          let text='';if(m.dose)text+=`Dosis: ${m.dose}`;if(m.doctorInstructions)text+=(text?' · ':'')+m.doctorInstructions;if(m.expiryDate)text+=(text?' · ':'')+`MHD ${m.expiryDate}`;
+          note.textContent=text;first.querySelector('.grow')?.appendChild(note);
         }
       });
     }
 
     if(view==='add'){
       const card=document.querySelector('.content .card');
-      if(card && !document.getElementById('med-dose')){
-        const times=document.getElementById('time-list');
-        const wrap=document.createElement('div'); wrap.innerHTML=`
+      if(card&&!document.getElementById('med-dose')){
+        const name=document.getElementById('med-name');
+        if(name&&!document.getElementById('voice-med')){
+          const row=document.createElement('div');row.className='name-voice-row';
+          name.parentNode.insertBefore(row,name);row.appendChild(name);
+          const mic=document.createElement('button');mic.type='button';mic.id='voice-med';mic.className='voice-btn';mic.textContent='🎤';mic.title='Medikament per Sprache eingeben';mic.onclick=startVoiceInput;row.appendChild(mic);
+        }
+        const wrap=document.createElement('div');wrap.innerHTML=`
           <div class="small" style="margin-top:12px">Ärztliche Vorgaben</div>
           <input id="med-dose" class="field" placeholder="Dosis / Stärke, z. B. 5 mg">
           <textarea id="doctor-instructions" class="field" rows="3" placeholder="z. B. morgens nüchtern / nach dem Essen / nach ärztlicher Vorgabe"></textarea>
           <div class="small" style="margin-top:10px">MHD / Verfallsdatum</div>
           <input id="med-expiry" class="field" type="date">
+          <div class="small" style="margin-top:10px">Kennfarbe</div>
+          <input id="med-color" class="color-field" type="color" value="#2a7c74" aria-label="Kennfarbe des Medikaments">
           <div class="doctor-disclaimer">Dein Arzt plant — PillPlan erinnert. Änderungen an Dosis oder Einnahme immer mit Arzt/Ärztin oder Apotheke klären.</div>`;
-        const addTime=document.getElementById('add-time'); card.insertBefore(wrap,addTime);
+        const addTime=document.getElementById('add-time');card.insertBefore(wrap,addTime);
       }
+    }
+
+    if(view==='settings'&&content&&!document.getElementById('comfort-tools')){
+      const box=document.createElement('div');box.id='comfort-tools';box.className='card';
+      const notifText=('Notification' in window)?`Status: ${Notification.permission==='granted'?'freigegeben':Notification.permission==='denied'?'blockiert':'noch nicht freigegeben'}`:'Auf diesem Gerät nicht verfügbar';
+      box.innerHTML=`<div class="form-title">Komfort & Weitergabe</div>
+        <button id="share-summary" class="btn primary">Teilen</button>
+        <button id="print-summary" class="btn secondary">Drucken</button>
+        <button id="test-notif" class="btn secondary">Erinnerung testen</button>
+        <div class="small reminder-note">${notifText}. Geplante Hintergrund-Erinnerungen werden in der Web-App noch nicht zuverlässig garantiert.</div>`;
+      content.appendChild(box);
+      document.getElementById('share-summary').onclick=shareSummary;
+      document.getElementById('print-summary').onclick=()=>window.print();
+      document.getElementById('test-notif').onclick=testNotification;
     }
   }
 
-  render = async function(){ await baseRender(); await enhance(); };
+  render=async function(){await baseRender();await enhance();};
   window.render=render;
+
   const style=document.createElement('style');
-  style.textContent=`.praise-card{background:#e8f4f3;border:1px solid #c8e4e1;border-radius:18px;padding:14px 16px;margin:8px 0 12px;font-weight:800;color:#315f5a}.expiry-card{background:#fff8e9;border:1px solid #ead4a1;border-radius:16px;padding:12px 14px;margin-bottom:12px;font-weight:700}.doctor-note{font-size:12px;color:#5f5a55;margin-top:6px;line-height:1.35}.doctor-disclaimer{background:#f3efe8;border-radius:14px;padding:12px;margin:10px 0 4px;font-size:13px;line-height:1.4;color:#514b45}textarea.field{resize:vertical;min-height:84px}`;
+  style.textContent=`
+    .praise-card{background:#e8f4f3;border:1px solid #c8e4e1;border-radius:18px;padding:14px 16px;margin:8px 0 12px;font-weight:800;color:#315f5a}
+    .expiry-card{background:#fff8e9;border:1px solid #ead4a1;border-radius:16px;padding:12px 14px;margin-bottom:12px;font-weight:700}
+    .doctor-note{font-size:12px;color:#5f5a55;margin-top:6px;line-height:1.35}
+    .doctor-disclaimer{background:#f3efe8;border-radius:14px;padding:12px;margin:10px 0 4px;font-size:13px;line-height:1.4;color:#514b45}
+    textarea.field{resize:vertical;min-height:84px}
+    .name-voice-row{display:grid;grid-template-columns:1fr 58px;gap:8px;align-items:center}
+    .voice-btn{height:48px;border:0;border-radius:14px;background:#e8f4f3;font-size:24px}
+    .voice-btn.listening{outline:3px solid #2f7770}
+    .color-field{width:100%;height:48px;border:1px solid #ddd4c9;border-radius:14px;background:#fff;padding:5px;margin:6px 0}
+    .reminder-note{margin-top:10px;line-height:1.4}
+    @media print{.bottom-nav,.tabs,.period-select,.mini,.legend{display:none!important}#app{max-width:none;padding:0}.card,.plan-med,.progress-card{break-inside:avoid}}
+  `;
   document.head.appendChild(style);
   setTimeout(()=>enhance(),250);
 })();
