@@ -1,4 +1,4 @@
-const CACHE='pillplan-next-v16-visual-audit-refine';
+const CACHE='pillplan-next-v17-accessibility-contrast';
 const ASSETS=['/pillplan-next/','/pillplan-next/index.html','/pillplan-next/core-v3.js','/pillplan-next/design-master-v4.css','/pillplan-next/design-master.css','/pillplan-next/manifest.json','/icon.png','/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
