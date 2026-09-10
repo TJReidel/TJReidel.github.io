@@ -21,6 +21,37 @@
     return `${s.done} von ${s.tot}. Du bleibst dran — das zählt.`;
   }
 
+  function statsPraise(pct){
+    if(pct>=80) return 'Gut im Blick – weiter so.';
+    if(pct>=40) return 'Schon einiges dokumentiert.';
+    return 'Jeder Eintrag hilft Ihnen, den Überblick zu behalten.';
+  }
+
+  async function buildStats(daysCount=30){
+    const meds=await all('meds');
+    const map=await latestEvents();
+    const days=pastDays(daysCount);
+    const out={green:0,yellow:0,red:0,unrated:0,undocumented:0,due:0,done:0};
+    for(const d of days){
+      for(const m of meds){
+        if(m.startDate && d<m.startDate) continue;
+        const times=normalizeTimes(m.times||[]);
+        for(const t of times){
+          out.due++;
+          const e=map[slotKey(m.id,d,t)];
+          if(!e || e.type!=='taken'){out.undocumented++;continue;}
+          out.done++;
+          if(e.tier==='yellow') out.yellow++;
+          else if(e.tier==='red') out.red++;
+          else if(e.tier==='unrated') out.unrated++;
+          else out.green++;
+        }
+      }
+    }
+    out.pct=out.due?Math.round(out.done/out.due*100):0;
+    return out;
+  }
+
   async function buildSummary(){
     const meds=await all('meds');
     const s=await todayStats();
@@ -61,11 +92,7 @@
     const field=document.getElementById('med-name');
     if(!field)return;
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){
-      field.focus();
-      alert('Direkte Spracheingabe ist hier nicht verfügbar. Nutze das Mikrofon der iPhone-Tastatur.');
-      return;
-    }
+    if(!SR){field.focus();alert('Direkte Spracheingabe ist hier nicht verfügbar. Nutze das Mikrofon der iPhone-Tastatur.');return;}
     const r=new SR();
     r.lang='de-DE'; r.interimResults=false; r.maxAlternatives=1;
     const b=document.getElementById('voice-med');
@@ -75,6 +102,52 @@
     r.onend=()=>{if(b){b.textContent='🎤';b.classList.remove('listening');}};
     r.start();
   }
+
+  async function importCompat(file){
+    const text=await file.text();
+    const obj=JSON.parse(text);
+
+    // PillPlan Next export
+    if(obj && Array.isArray(obj.meds) && Array.isArray(obj.events)){
+      await clear('meds'); await clear('events'); await clear('meta');
+      for(const m of obj.meds) await put('meds',{...m,times:normalizeTimes(m.times||[])});
+      for(const e of obj.events) await put('events',e);
+      for(const x of (obj.meta||[])) await put('meta',x);
+      await put('meta',{key:'importedAt',value:new Date().toISOString()});
+      await render(); return;
+    }
+
+    // Legacy PillPlan localStorage backup
+    let state=obj;
+    if(obj?.localStorage?.pillplan_v4) state=typeof obj.localStorage.pillplan_v4==='string'?JSON.parse(obj.localStorage.pillplan_v4):obj.localStorage.pillplan_v4;
+    if(!state || !Array.isArray(state.meds) || typeof state.taken!=='object') throw new Error('Ungültige PillPlan-Sicherung');
+    await clear('meds'); await clear('events');
+    for(const m of state.meds){
+      await put('meds',{
+        id:m.id,name:m.name,times:normalizeTimes(m.times||[]),color:m.color||'#2a7c74',startDate:m.startDate||null,
+        scheduleHistory:m.scheduleHistory||[],dose:m.dose||'',doctorInstructions:m.doctorInstructions||'',expiryDate:m.expiryDate||''
+      });
+    }
+    for(const [slot,val] of Object.entries(state.taken||{})){
+      const tier=tierForLegacy(val); if(!tier) continue;
+      await put('events',{eventId:uid(),slot,type:'taken',tier,createdAt:(val&&val.takenAt)||new Date().toISOString(),legacy:true});
+    }
+    await put('meta',{key:'importedAt',value:new Date().toISOString()});
+    await render();
+  }
+
+  async function exportCompat(){
+    const meds=await all('meds'),events=await all('events'),meta=await all('meta');
+    const payload={schema:'pillplan-next-v6',exportedAt:new Date().toISOString(),meds,events,meta};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`PillPlan_Backup_${today()}.json`;a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }
+
+  importBackup=importCompat;
+  exportBackup=exportCompat;
+  window.importBackup=importCompat;
+  window.exportBackup=exportCompat;
 
   async function addMed(name,times,color='#2a7c74'){
     times=normalizeTimes(times); if(!name||!times.length)return;
@@ -109,15 +182,12 @@
     const app=document.getElementById('app'); if(!app) return;
     const s=await todayStats(), st=await streak(), meds=await all('meds');
 
-    const period=document.getElementById('period');
-    if(period && ![...period.options].some(o=>o.value==='21')){
+    const periodSelect=document.getElementById('period');
+    if(periodSelect && ![...periodSelect.options].some(o=>o.value==='21')){
       const opt=document.createElement('option'); opt.value='21'; opt.textContent='3 Wochen';
-      period.insertBefore(opt,period.querySelector('option[value="30"]'));
+      periodSelect.insertBefore(opt,periodSelect.querySelector('option[value="30"]'));
     }
-    if(period===21){
-      const label=document.querySelector('.section-label');
-      if(label) label.textContent=label.textContent.replace('1 MONAT','3 WOCHEN');
-    }
+    if(period===21){const label=document.querySelector('.section-label');if(label)label.textContent=label.textContent.replace('1 MONAT','3 WOCHEN');}
 
     const content=document.querySelector('.content');
     if(view==='today' && content && !document.getElementById('daily-praise')){
@@ -142,8 +212,7 @@
       if(card&&!document.getElementById('med-dose')){
         const name=document.getElementById('med-name');
         if(name&&!document.getElementById('voice-med')){
-          const row=document.createElement('div');row.className='name-voice-row';
-          name.parentNode.insertBefore(row,name);row.appendChild(name);
+          const row=document.createElement('div');row.className='name-voice-row';name.parentNode.insertBefore(row,name);row.appendChild(name);
           const mic=document.createElement('button');mic.type='button';mic.id='voice-med';mic.className='voice-btn';mic.textContent='🎤';mic.title='Medikament per Sprache eingeben';mic.onclick=startVoiceInput;row.appendChild(mic);
         }
         const wrap=document.createElement('div');wrap.innerHTML=`
@@ -159,18 +228,33 @@
       }
     }
 
-    if(view==='settings'&&content&&!document.getElementById('comfort-tools')){
-      const box=document.createElement('div');box.id='comfort-tools';box.className='card';
-      const notifText=('Notification' in window)?`Status: ${Notification.permission==='granted'?'freigegeben':Notification.permission==='denied'?'blockiert':'noch nicht freigegeben'}`:'Auf diesem Gerät nicht verfügbar';
-      box.innerHTML=`<div class="form-title">Komfort & Weitergabe</div>
-        <button id="share-summary" class="btn primary">Teilen</button>
-        <button id="print-summary" class="btn secondary">Drucken</button>
-        <button id="test-notif" class="btn secondary">Erinnerung testen</button>
-        <div class="small reminder-note">${notifText}. Geplante Hintergrund-Erinnerungen werden in der Web-App noch nicht zuverlässig garantiert.</div>`;
-      content.appendChild(box);
-      document.getElementById('share-summary').onclick=shareSummary;
-      document.getElementById('print-summary').onclick=()=>window.print();
-      document.getElementById('test-notif').onclick=testNotification;
+    if(view==='settings'&&content){
+      if(!document.getElementById('stats-v2')){
+        const stats=await buildStats(30);
+        const box=document.createElement('div');box.id='stats-v2';box.className='card stats-card';
+        box.innerHTML=`<div class="form-title">Statistik · letzte 30 Tage</div>
+          <div class="stats-main"><strong>${stats.pct}%</strong><span>Dokumentierte Einnahmen</span></div>
+          <div class="stats-praise">${statsPraise(stats.pct)}</div>
+          <div class="stats-row"><span><i class="dot green-dot"></i>Grün · pünktlich</span><strong>${stats.green}</strong></div>
+          <div class="stats-row"><span><i class="dot yellow-dot"></i>Gelb · 30–44 Min. verspätet</span><strong>${stats.yellow}</strong></div>
+          <div class="stats-row"><span><i class="dot red-dot"></i>Rot · 45+ Min. verspätet</span><strong>${stats.red}</strong></div>
+          <div class="stats-row"><span><i class="dot gray-dot"></i>Hellgrau · nachgetragen</span><strong>${stats.unrated}</strong></div>
+          <div class="stats-row"><span><i class="dot white-dot"></i>Nicht dokumentiert</span><strong>${stats.undocumented}</strong></div>`;
+        content.appendChild(box);
+      }
+      if(!document.getElementById('comfort-tools')){
+        const box=document.createElement('div');box.id='comfort-tools';box.className='card';
+        const notifText=('Notification' in window)?`Status: ${Notification.permission==='granted'?'freigegeben':Notification.permission==='denied'?'blockiert':'noch nicht freigegeben'}`:'Auf diesem Gerät nicht verfügbar';
+        box.innerHTML=`<div class="form-title">Komfort & Weitergabe</div>
+          <button id="share-summary" class="btn primary">Teilen</button>
+          <button id="print-summary" class="btn secondary">Drucken</button>
+          <button id="test-notif" class="btn secondary">Erinnerung testen</button>
+          <div class="small reminder-note">${notifText}. Geplante Hintergrund-Erinnerungen werden in der Web-App noch nicht zuverlässig garantiert.</div>`;
+        content.appendChild(box);
+        document.getElementById('share-summary').onclick=shareSummary;
+        document.getElementById('print-summary').onclick=()=>window.print();
+        document.getElementById('test-notif').onclick=testNotification;
+      }
     }
   }
 
@@ -189,6 +273,7 @@
     .voice-btn.listening{outline:3px solid #2f7770}
     .color-field{width:100%;height:48px;border:1px solid #ddd4c9;border-radius:14px;background:#fff;padding:5px;margin:6px 0}
     .reminder-note{margin-top:10px;line-height:1.4}
+    .stats-main{display:flex;align-items:baseline;gap:10px;margin:4px 0 6px}.stats-main strong{font-size:38px;color:#2f7770}.stats-main span{font-weight:800}.stats-praise{color:#5f5a55;margin-bottom:12px}.stats-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid #eee8e0;font-size:14px}.dot{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:8px;vertical-align:-1px}.green-dot{background:#2f7770}.yellow-dot{background:#d8b866}.red-dot{background:#bb4436}.gray-dot{background:#d9d4cd}.white-dot{background:#fff;border:1px solid #cfc8bf}
     @media print{.bottom-nav,.tabs,.period-select,.mini,.legend{display:none!important}#app{max-width:none;padding:0}.card,.plan-med,.progress-card{break-inside:avoid}}
   `;
   document.head.appendChild(style);
