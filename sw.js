@@ -1,4 +1,4 @@
-const CACHE="pillplan-v12-recovery1";
+const CACHE="pillplan-v12-restore1";
 const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/pillplan-local-date-v1.js","/pillplan-v12-schedule-change-ui.js","/pillplan-v12-medication-end-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
@@ -38,8 +38,8 @@ self.addEventListener("fetch",e=>{
   const req=e.request;
   const url=new URL(req.url);
 
-  // Recovery must be a plain network page: no app-shell fallback and no injected scripts.
-  if(url.origin===self.location.origin && url.pathname==="/pillplan-recovery.html"){
+  // Recovery/restore pages must be plain network pages: no app-shell fallback and no injected scripts.
+  if(url.origin===self.location.origin && (url.pathname==="/pillplan-recovery.html" || url.pathname==="/pillplan-restore.html")){
     e.respondWith(fetch(req,{cache:"no-store"}));
     return;
   }
