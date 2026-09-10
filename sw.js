@@ -1,4 +1,4 @@
-const CACHE="pillplan-v12-restore4";
+const CACHE="pillplan-v12-restore5";
 const SHELL=["/index.html","/manifest.json","/adherence-v2.js","/adherence-v2-adapter.js","/pillplan-v12-correction-ui.js","/pillplan-local-date-v1.js","/pillplan-v12-schedule-change-ui.js","/pillplan-v12-medication-end-ui.js","/medication-schedule-v1.js","/statistics-v2.js","/icon.png","/icon-512.png"];
 
 self.addEventListener("install",e=>{
@@ -11,9 +11,17 @@ self.addEventListener("activate",e=>{
   self.clients.claim();
 });
 
-async function injectUiScripts(response){
+async function transformAppShell(response){
   try{
     let text=await response.text();
+
+    // P0: production must never bootstrap with sample medicines.
+    // Replace the exact legacy default state before the page executes.
+    text=text.replace(
+      /meds:\s*\[\s*\{id:1,\s*name:\"Metformin 500 mg\",\s*times:\[\"08:00\",\"20:00\"\],\s*color:\"#2a7c74\"\},\s*\{id:2,\s*name:\"Lisinopril 10 mg\",\s*times:\[\"08:00\"\],\s*color:\"#c0392b\"\}\s*\]/,
+      'meds: []'
+    );
+
     if(!text.includes("pillplan-v12-correction-ui.js")){
       text=text.replace("</body>",'<script src="/pillplan-v12-correction-ui.js"></script></body>');
     }
@@ -26,6 +34,7 @@ async function injectUiScripts(response){
     if(!text.includes("pillplan-v12-medication-end-ui.js")){
       text=text.replace("</body>",'<script src="/pillplan-v12-medication-end-ui.js"></script></body>');
     }
+
     const headers=new Headers(response.headers);
     headers.delete("content-length");
     return new Response(text,{status:response.status,statusText:response.statusText,headers:headers});
@@ -45,15 +54,15 @@ self.addEventListener("fetch",e=>{
 
   if(req.mode==="navigate" || (url.origin===self.location.origin && (url.pathname==="/" || url.pathname==="/index.html"))){
     e.respondWith(
-      fetch(req)
+      fetch(req,{cache:"no-store"})
         .then(async res=>{
           const copy=res.clone();
           caches.open(CACHE).then(c=>c.put("/index.html",copy));
-          return injectUiScripts(res);
+          return transformAppShell(res);
         })
         .catch(async()=>{
           const cached=await caches.match("/index.html");
-          return cached?injectUiScripts(cached):cached;
+          return cached?transformAppShell(cached):cached;
         })
     );
     return;
