@@ -77,6 +77,24 @@ A new runtime may be staged and cached before release, but `index.html` must con
 - Time-zone logic, correction history, edit workflow and voice enhancement are consolidated into the active runtime
 - Legacy runtime files remain in the repository for forensic rollback/reference but are not loaded by production
 
-### Final device smoke check
+### Device smoke-test record — 11 Sep 2026
 
-After first launch of v24, verify on the actual iPhone/Home-Screen PWA: existing medications visible, one intake can be documented, Plan opens, Settings opens, and app relaunches with the same data. This is an empirical device check; it must not require deleting the app, clearing Safari data, or re-entering medication data.
+Observed on the actual iPhone/Home-Screen PWA after activation of v24:
+
+- PASS — existing medications remained present: ASS 100, Candesartan 4mg, Centrum
+- PASS — medication colour identities remained intact
+- PASS — 08:00 schedules remained intact
+- PASS — historical documented day (10 Sep) remained visible
+- PASS — current day (11 Sep) documented separately and correctly
+- PASS — weekly aggregation displayed 6/21 = 29%, consistent with 2 documented days × 3 medications
+- PASS — Plan view opened and rendered medication history
+- PASS — Today view rendered 3/3 documented, 100%, punctuality 100%, 2-day streak
+- PASS — second tap on an already documented intake did not delete immediately; explicit confirmation dialog appeared
+- PASS — cancel path is available before any undo action
+- PASS — no reset, Safari-data clearing, app deletion or medication re-entry was required
+
+Remaining empirical device check before calling the release fully closed:
+
+- Settings view opens and visibly shows both Language and Time zone controls.
+
+This final visual check must not trigger any architecture or data-model change unless an actual defect is observed.
