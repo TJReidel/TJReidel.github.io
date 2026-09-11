@@ -1,9 +1,12 @@
-const CACHE='pillplan-next-v22-single-runtime';
+const CACHE='pillplan-next-v23-stability-stage';
 const PREVIOUS_CACHE='pillplan-next-v21-stability-hardening';
 const SHELL='/pillplan-next/index.html';
 const ASSETS=[
   '/pillplan-next/',
   SHELL,
+  '/pillplan-next/core-v4.js',
+  '/pillplan-next/timezone-v1.js',
+  '/pillplan-next/ux-completion-v1.js',
   '/pillplan-next/core-v5.js',
   '/pillplan-next/design-master-v4.css',
   '/pillplan-next/design-master.css',
@@ -15,6 +18,7 @@ const ASSETS=[
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
+    // Atomic install: a release is never activated with missing required assets.
     await cache.addAll(ASSETS);
     self.skipWaiting();
   })());
@@ -23,6 +27,7 @@ self.addEventListener('install',event=>{
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
+    // Preserve the previous known-good release as rollback protection.
     await Promise.all(keys
       .filter(k=>k.startsWith('pillplan-next-')&&k!==CACHE&&k!==PREVIOUS_CACHE)
       .map(k=>caches.delete(k)));
