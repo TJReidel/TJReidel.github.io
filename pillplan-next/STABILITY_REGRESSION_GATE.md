@@ -64,3 +64,19 @@ Purpose: PillPlan exists to strengthen medication adherence. A release must neve
 ## Production rule
 
 A new runtime may be staged and cached before release, but `index.html` must continue loading the last known-good runtime until every gate above has passed. No release may require clearing Safari history/site data or deleting the Home-Screen app as a normal migration step.
+
+## Release record — v24 single runtime
+
+- Active production runtime: `core-v5.js`
+- Runtime count in `index.html`: 1
+- IndexedDB database name/version unchanged: `pillplan-next-db`, schema version 1
+- No medication/event migration is tied to this release
+- Previous known-good cache retained: `pillplan-next-v23-stability-stage`
+- New atomic cache: `pillplan-next-v24-single-runtime`
+- Optional APIs remain capability-detected and non-blocking
+- Time-zone logic, correction history, edit workflow and voice enhancement are consolidated into the active runtime
+- Legacy runtime files remain in the repository for forensic rollback/reference but are not loaded by production
+
+### Final device smoke check
+
+After first launch of v24, verify on the actual iPhone/Home-Screen PWA: existing medications visible, one intake can be documented, Plan opens, Settings opens, and app relaunches with the same data. This is an empirical device check; it must not require deleting the app, clearing Safari data, or re-entering medication data.
