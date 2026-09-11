@@ -1,12 +1,10 @@
-const CACHE='pillplan-next-v21-stability-hardening';
-const PREVIOUS_CACHE='pillplan-next-v20-ux-completion';
+const CACHE='pillplan-next-v22-single-runtime';
+const PREVIOUS_CACHE='pillplan-next-v21-stability-hardening';
 const SHELL='/pillplan-next/index.html';
 const ASSETS=[
   '/pillplan-next/',
   SHELL,
-  '/pillplan-next/core-v4.js',
-  '/pillplan-next/timezone-v1.js',
-  '/pillplan-next/ux-completion-v1.js',
+  '/pillplan-next/core-v5.js',
   '/pillplan-next/design-master-v4.css',
   '/pillplan-next/design-master.css',
   '/pillplan-next/manifest.json',
@@ -17,8 +15,6 @@ const ASSETS=[
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
-    // Atomic shell install: if a required asset cannot be fetched,
-    // installation fails and the currently working service worker stays active.
     await cache.addAll(ASSETS);
     self.skipWaiting();
   })());
@@ -27,7 +23,6 @@ self.addEventListener('install',event=>{
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
-    // Keep the immediately previous known-good release as rollback cache.
     await Promise.all(keys
       .filter(k=>k.startsWith('pillplan-next-')&&k!==CACHE&&k!==PREVIOUS_CACHE)
       .map(k=>caches.delete(k)));
@@ -72,7 +67,6 @@ self.addEventListener('fetch',event=>{
   }
 
   if(url.pathname.startsWith('/pillplan-next/')){
-    // App code remains fresh after releases, but every version has an offline copy.
     event.respondWith(networkFirst(request));
     return;
   }
