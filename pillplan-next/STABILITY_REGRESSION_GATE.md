@@ -91,10 +91,15 @@ Observed on the actual iPhone/Home-Screen PWA after activation of v24:
 - PASS — Today view rendered 3/3 documented, 100%, punctuality 100%, 2-day streak
 - PASS — second tap on an already documented intake did not delete immediately; explicit confirmation dialog appeared
 - PASS — cancel path is available before any undo action
+- PASS — Settings view opened successfully
+- PASS — Language control visible and set to Deutsch
+- PASS — Time-zone control visible with plan/device zone Europe/Berlin and status “Zeitzone aktuell”
+- PASS — IndexedDB storage indicator visible
+- PASS — backup import/export controls visible
 - PASS — no reset, Safari-data clearing, app deletion or medication re-entry was required
 
-Remaining empirical device check before calling the release fully closed:
+## Closure
 
-- Settings view opens and visibly shows both Language and Time zone controls.
+**Stability Hardening v1: CLOSED / PASS — 11 Sep 2026**
 
-This final visual check must not trigger any architecture or data-model change unless an actual defect is observed.
+No further architecture, cache, runtime or IndexedDB changes should be made unless a concrete defect, compatibility issue or validated product requirement requires them. Further work should prioritize adherence/compliance value over cosmetic or show features.
