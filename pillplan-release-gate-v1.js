@@ -11,7 +11,8 @@
   }
 
   function applyReleaseGateFixes(){
-    document.title="PillPlan "+VERSION;
+    var title="PillPlan v"+VERSION;
+    if(document.title!==title) document.title=title;
 
     replaceExact("#main-content div", "PillPlan v1.1", "PillPlan v"+VERSION);
     replaceExact("#main-content div", "PillPlan v1.2", "PillPlan v"+VERSION);
