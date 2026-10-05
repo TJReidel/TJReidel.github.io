@@ -16,8 +16,8 @@ const TX={
  ru:{today:'Сегодня',documentation:'Документация',documented:'отмечено',punctuality:'Вовремя',week1:'1 неделя',week2:'2 недели',week3:'3 недели',month1:'1 месяц',plan:'ПЛАН',todayNav:'СЕГОДНЯ',settingsNav:'НАСТРОЙКИ',add:'ДОБАВИТЬ',language:'Язык',languageSub:'Язык приложения',settings:'Настройки'},
  pt:{today:'Hoje',documentation:'Documentação',documented:'documentado',punctuality:'Pontualidade',week1:'1 semana',week2:'2 semanas',week3:'3 semanas',month1:'1 mês',plan:'PLANO',todayNav:'HOJE',settingsNav:'DEFINIÇÕES',add:'ADICIONAR',language:'Idioma',languageSub:'Idioma da aplicação',settings:'Definições'}
 };
-Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Medikamente und Einnahmen als PDF oder Ausdruck',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht erstellen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'PDF öffnen',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.'});
-Object.assign(TX.en,{report:'Medication report',reportSub:'Medications and intake history as PDF or printout',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'Create report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'Open PDF',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.'});
+Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Medikamente und Einnahmen als PDF oder Ausdruck',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht erstellen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'PDF erstellen / teilen',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.',reportSaveHint:'Zum Drucken: PDF zuerst in „Dateien“ sichern und von dort öffnen.'});
+Object.assign(TX.en,{report:'Medication report',reportSub:'Medications and intake history as PDF or printout',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'Create report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'Create / share PDF',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.',reportSaveHint:'To print: first save the PDF to Files, then open it there.'});
 for(const c of Object.keys(LANGS))TX[c]={...TX.en,...TX[c]};
 function detectLang(){const saved=localStorage.getItem('pillplan_lang');if(saved&&LANGS[saved])return saved;const p=(navigator.language||'de').toLowerCase().split('-')[0];return LANGS[p]?p:'de'}
 let lang=detectLang(),db,view='today',period=7;
@@ -163,7 +163,7 @@ function reportDate(ds){return fmtDate(ds,{day:'2-digit',month:'2-digit',year:'n
 function reportHTML(r){
   const meds=r.medicationRows.length?r.medicationRows.map(m=>`<div class="pp-report-med"><b>${esc(m.name)}${m.dose?' · '+esc(m.dose):''}</b><div>${tr('reportTimes')}: ${esc(m.times.join(' · '))}</div>${m.instructions?`<div>${esc(m.instructions)}</div>`:''}${m.expiryDate?`<div>${tr('expiry')}: ${esc(reportDate(m.expiryDate))}</div>`:''}</div>`).join(''):`<div class="pp-report-med">${tr('reportNoData')}</div>`;
   const rows=r.dayRows.map(x=>`<tr><td>${esc(reportDate(x.date))}</td><td>${esc(x.name)}${x.dose?' '+esc(x.dose):''}</td><td>${esc(x.time)}</td><td><span class="pp-report-status ${esc(x.tier)}">${esc(x.label)}</span></td></tr>`).join('');
-  return `<section class="pp-report-sheet" id="pp-report-sheet"><div class="pp-report-title">${tr('reportTitle')}</div><div class="pp-report-meta">${tr('reportCreated')}: ${esc(reportDate(today()))} · ${esc(reportDate(r.start))} – ${esc(reportDate(r.end))} · ${esc(planTimeZone())}</div><div class="pp-report-kpis"><div class="pp-report-kpi"><b>${r.stats.due}</b><span>${tr('reportPlanned')}</span></div><div class="pp-report-kpi"><b>${r.stats.done}</b><span>${tr('reportDocumented')}</span></div><div class="pp-report-kpi"><b>${r.stats.pct}%</b><span>${tr('reportRate')}</span></div></div><div class="pp-report-h">${tr('reportMedicationList')}</div>${meds}<div class="pp-report-h">${tr('reportDaily')}</div>${rows?`<table class="pp-report-table"><thead><tr><th>Datum</th><th>${tr('medication')}</th><th>${tr('intakeTime')}</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="pp-report-med">${tr('reportNoData')}</div>`}<div class="pp-report-disclaimer"><b>PillPlan</b> · ${esc(tr('reportLocal'))}<br><br>${esc(tr('reportDisclaimer'))}</div></section>`;
+  return `<section class="pp-report-sheet" id="pp-report-sheet"><div class="pp-report-title">${tr('reportTitle')}</div><div class="pp-report-meta">${tr('reportCreated')}: ${esc(reportDate(today()))} · ${esc(reportDate(r.start))} – ${esc(reportDate(r.end))} · ${esc(planTimeZone())}</div><div class="pp-report-kpis"><div class="pp-report-kpi"><b>${r.stats.due}</b><span>${tr('reportPlanned')}</span></div><div class="pp-report-kpi"><b>${r.stats.done}</b><span>${tr('reportDocumented')}</span></div><div class="pp-report-kpi"><b>${r.stats.pct}%</b><span>${tr('reportRate')}</span></div></div><div class="pp-report-h">${tr('reportMedicationList')}</div>${meds}<div class="pp-report-h">${tr('reportDaily')}</div>${rows?`<table class="pp-report-table"><thead><tr><th>Datum</th><th>${tr('medication')}</th><th>${tr('intakeTime')}</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="pp-report-med">${tr('reportNoData')}</div>`}<div class="pp-report-disclaimer"><b>PillPlan</b> · ${esc(tr('reportLocal'))}<br><br>${esc(tr('reportSaveHint'))}<br><br>${esc(tr('reportDisclaimer'))}</div></section>`;
 }
 
 
@@ -251,18 +251,20 @@ function buildLocalPdf(r){
 }
 async function openPrintableReport(r){
   const blob=buildLocalPdf(r),filename='PillPlan_Bericht_'+today()+'.pdf';
-  const url=URL.createObjectURL(blob);
-  // iOS: open the PDF itself as a standalone document first.
-  // Printing/sharing from that document avoids the "protected PDF" error seen when printing a Web Share attachment.
-  const w=window.open(url,'_blank');
-  if(!w){
-    const a=document.createElement('a');
-    a.href=url;a.download=filename;a.target='_blank';a.rel='noopener';
-    document.body.appendChild(a);a.click();a.remove();
+  if(navigator.share&&navigator.canShare){
+    try{
+      const file=new File([blob],filename,{type:'application/pdf'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:'PillPlan Medikamentenbericht'});
+        return;
+      }
+    }catch(e){if(e&&e.name==='AbortError')return}
   }
-  setTimeout(function(){URL.revokeObjectURL(url)},300000);
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;a.rel='noopener';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url)},60000);
 }
-
 async function showMedicationReport(daysCount=7){
   ensureReportStyles();
   const r=await buildMedicationReport(daysCount);
