@@ -172,7 +172,7 @@ function pdfEsc(s){
   return String(s??'').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/[äöüÄÖÜßéèàáóíñç€–—’“”]/g,function(ch){return map[ch]||ch}).replace(/[^\x20-\x7E\\]/g,'?');
 }
 function pdfText(x,y,size,text,bold){
-  return 'BT /F'+(bold?2:1)+' '+size+' Tf '+x+' '+y+' Td ('+pdfEsc(text)+') Tj ET\\n';
+  return 'BT /F'+(bold?2:1)+' '+size+' Tf '+x+' '+y+' Td ('+pdfEsc(text)+') Tj ET\n';
 }
 function pdfLine(x1,y1,x2,y2,width){
   return (width||0.6)+' w '+x1+' '+y1+' m '+x2+' '+y2+' l S\n';
