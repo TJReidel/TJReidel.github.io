@@ -165,6 +165,34 @@ function reportHTML(r){
   const rows=r.dayRows.map(x=>`<tr><td>${esc(reportDate(x.date))}</td><td>${esc(x.name)}${x.dose?' '+esc(x.dose):''}</td><td>${esc(x.time)}</td><td><span class="pp-report-status ${esc(x.tier)}">${esc(x.label)}</span></td></tr>`).join('');
   return `<section class="pp-report-sheet" id="pp-report-sheet"><div class="pp-report-title">${tr('reportTitle')}</div><div class="pp-report-meta">${tr('reportCreated')}: ${esc(reportDate(today()))} · ${esc(reportDate(r.start))} – ${esc(reportDate(r.end))} · ${esc(planTimeZone())}</div><div class="pp-report-kpis"><div class="pp-report-kpi"><b>${r.stats.due}</b><span>${tr('reportPlanned')}</span></div><div class="pp-report-kpi"><b>${r.stats.done}</b><span>${tr('reportDocumented')}</span></div><div class="pp-report-kpi"><b>${r.stats.pct}%</b><span>${tr('reportRate')}</span></div></div><div class="pp-report-h">${tr('reportMedicationList')}</div>${meds}<div class="pp-report-h">${tr('reportDaily')}</div>${rows?`<table class="pp-report-table"><thead><tr><th>Datum</th><th>${tr('medication')}</th><th>${tr('intakeTime')}</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="pp-report-med">${tr('reportNoData')}</div>`}<div class="pp-report-disclaimer"><b>PillPlan</b> · ${esc(tr('reportLocal'))}<br><br>${esc(tr('reportDisclaimer'))}</div></section>`;
 }
+
+function openPrintableReport(r){
+  const w=window.open('','_blank');
+  if(!w){alert('Druckansicht konnte nicht geöffnet werden. Bitte Pop-ups für diese Seite erlauben.');return;}
+  const html=reportHTML(r);
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PillPlan Bericht ${today()}</title><style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#fff;color:#171411}
+    .print-wrap{max-width:820px;margin:0 auto;padding:22px}
+    .pp-report-sheet{background:#fff;color:#171411;padding:0}
+    .pp-report-title{font-size:26px;font-weight:900;line-height:1.15;margin-bottom:4px}
+    .pp-report-meta{font-size:12px;color:#5d554e;margin-bottom:16px}
+    .pp-report-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 18px}
+    .pp-report-kpi{background:#f2ede6;border:1px solid #d7cec3;border-radius:12px;padding:10px}
+    .pp-report-kpi b{display:block;font-size:20px}.pp-report-kpi span{font-size:10px;color:#5d554e}
+    .pp-report-h{font-size:14px;font-weight:900;margin:18px 0 8px}
+    .pp-report-med{padding:9px 0;border-bottom:1px solid #e5ded5;font-size:12px}.pp-report-med b{font-size:13px}
+    .pp-report-table{width:100%;border-collapse:collapse;font-size:10px}.pp-report-table th,.pp-report-table td{padding:7px 5px;border-bottom:1px solid #e7e0d8;text-align:left;vertical-align:top}.pp-report-table th{font-weight:900}
+    .pp-report-status{font-weight:800}.pp-report-status.green{color:#1f7069}.pp-report-status.yellow{color:#7b5c16}.pp-report-status.red{color:#9f3025}.pp-report-status.unrated,.pp-report-status.open{color:#5d554e}
+    .pp-report-disclaimer{margin-top:18px;padding-top:12px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
+    .print-actions{position:sticky;bottom:0;background:#fff;padding:12px 0 4px;display:flex;gap:10px}
+    .print-actions button{flex:1;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:800}
+    .print-actions .primary{background:#2a7c74;color:#fff}.print-actions .secondary{background:#eee8df;color:#2b2723}
+    @media print{.print-actions{display:none!important}.print-wrap{max-width:none;padding:12mm}.pp-report-table{font-size:9pt}.pp-report-disclaimer{font-size:8.5pt}}
+  </style></head><body><div class="print-wrap">${html}<div class="print-actions"><button class="secondary" onclick="window.close()">Schließen</button><button class="primary" onclick="window.print()">PDF / Drucken</button></div></div></body></html>`);
+  w.document.close();
+  w.focus();
+}
 async function showMedicationReport(daysCount=7){
   ensureReportStyles();
   const r=await buildMedicationReport(daysCount);
@@ -173,7 +201,7 @@ async function showMedicationReport(daysCount=7){
   document.getElementById('pp-report-cancel').onclick=modalClose;
   document.getElementById('pp-report-refresh').onclick=()=>showMedicationReport(Number(document.getElementById('pp-report-period').value)||7);
   document.getElementById('pp-report-period').onchange=e=>showMedicationReport(Number(e.target.value)||7);
-  document.getElementById('pp-report-print').onclick=()=>window.print();
+  document.getElementById('pp-report-print').onclick=()=>openPrintableReport(r);
 }
 async function selfCheck(){for(const s of ['meds','events','meta'])if(!db.objectStoreNames.contains(s))throw new Error('Missing data store: '+s);await all('meds');await all('events');return true}
 applyLang();openDB().then(selfCheck).then(render).catch(e=>{document.getElementById('app').innerHTML=`<div class="fatal-card"><strong>${tr('fatal')}</strong><div>${esc(e?.message||e)}</div></div>`});
