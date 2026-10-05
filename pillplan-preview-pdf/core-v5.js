@@ -16,8 +16,8 @@ const TX={
  ru:{today:'Сегодня',documentation:'Документация',documented:'отмечено',punctuality:'Вовремя',week1:'1 неделя',week2:'2 недели',week3:'3 недели',month1:'1 месяц',plan:'ПЛАН',todayNav:'СЕГОДНЯ',settingsNav:'НАСТРОЙКИ',add:'ДОБАВИТЬ',language:'Язык',languageSub:'Язык приложения',settings:'Настройки'},
  pt:{today:'Hoje',documentation:'Documentação',documented:'documentado',punctuality:'Pontualidade',week1:'1 semana',week2:'2 semanas',week3:'3 semanas',month1:'1 mês',plan:'PLANO',todayNav:'HOJE',settingsNav:'DEFINIÇÕES',add:'ADICIONAR',language:'Idioma',languageSub:'Idioma da aplicação',settings:'Definições'}
 };
-Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Medikamente und Einnahmen als PDF oder Ausdruck',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht erstellen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'Druckansicht öffnen',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.'});
-Object.assign(TX.en,{report:'Medication report',reportSub:'Medications and intake history as PDF or printout',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'Create report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'Open print view',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.'});
+Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Medikamente und Einnahmen als PDF oder Ausdruck',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht erstellen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'PDF erstellen / teilen',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.'});
+Object.assign(TX.en,{report:'Medication report',reportSub:'Medications and intake history as PDF or printout',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'Create report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'Create / share PDF',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.'});
 for(const c of Object.keys(LANGS))TX[c]={...TX.en,...TX[c]};
 function detectLang(){const saved=localStorage.getItem('pillplan_lang');if(saved&&LANGS[saved])return saved;const p=(navigator.language||'de').toLowerCase().split('-')[0];return LANGS[p]?p:'de'}
 let lang=detectLang(),db,view='today',period=7;
@@ -166,35 +166,101 @@ function reportHTML(r){
   return `<section class="pp-report-sheet" id="pp-report-sheet"><div class="pp-report-title">${tr('reportTitle')}</div><div class="pp-report-meta">${tr('reportCreated')}: ${esc(reportDate(today()))} · ${esc(reportDate(r.start))} – ${esc(reportDate(r.end))} · ${esc(planTimeZone())}</div><div class="pp-report-kpis"><div class="pp-report-kpi"><b>${r.stats.due}</b><span>${tr('reportPlanned')}</span></div><div class="pp-report-kpi"><b>${r.stats.done}</b><span>${tr('reportDocumented')}</span></div><div class="pp-report-kpi"><b>${r.stats.pct}%</b><span>${tr('reportRate')}</span></div></div><div class="pp-report-h">${tr('reportMedicationList')}</div>${meds}<div class="pp-report-h">${tr('reportDaily')}</div>${rows?`<table class="pp-report-table"><thead><tr><th>Datum</th><th>${tr('medication')}</th><th>${tr('intakeTime')}</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="pp-report-med">${tr('reportNoData')}</div>`}<div class="pp-report-disclaimer"><b>PillPlan</b> · ${esc(tr('reportLocal'))}<br><br>${esc(tr('reportDisclaimer'))}</div></section>`;
 }
 
-function openPrintableReport(r){
-  const printable=`<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PillPlan Bericht ${today()}</title><style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#fff;color:#171411}
-    .print-wrap{max-width:820px;margin:0 auto;padding:22px}
-    .pp-report-sheet{background:#fff;color:#171411;padding:0}
-    .pp-report-title{font-size:26px;font-weight:900;line-height:1.15;margin-bottom:4px}
-    .pp-report-meta{font-size:12px;color:#5d554e;margin-bottom:16px}
-    .pp-report-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 18px}
-    .pp-report-kpi{background:#f2ede6;border:1px solid #d7cec3;border-radius:12px;padding:10px}
-    .pp-report-kpi b{display:block;font-size:20px}.pp-report-kpi span{font-size:10px;color:#5d554e}
-    .pp-report-h{font-size:14px;font-weight:900;margin:18px 0 8px}
-    .pp-report-med{padding:9px 0;border-bottom:1px solid #e5ded5;font-size:12px}.pp-report-med b{font-size:13px}
-    .pp-report-table{width:100%;border-collapse:collapse;font-size:10px}.pp-report-table th,.pp-report-table td{padding:7px 5px;border-bottom:1px solid #e7e0d8;text-align:left;vertical-align:top}.pp-report-table th{font-weight:900}
-    .pp-report-status{font-weight:800}.pp-report-status.green{color:#1f7069}.pp-report-status.yellow{color:#7b5c16}.pp-report-status.red{color:#9f3025}.pp-report-status.unrated,.pp-report-status.open{color:#5d554e}
-    .pp-report-disclaimer{margin-top:18px;padding-top:12px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
-    @media print{.print-wrap{max-width:none;padding:12mm}.pp-report-table{font-size:9pt}.pp-report-disclaimer{font-size:8.5pt}}
-  </style></head><body><div class="print-wrap">${reportHTML(r)}</div></body></html>`;
-  const blob=new Blob([printable],{type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.target='_blank';
-  a.rel='noopener';
-  a.download=`PillPlan_Bericht_${today()}.html`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),60000);
+
+function pdfEsc(s){
+  const map={'ä':'\\344','ö':'\\366','ü':'\\374','Ä':'\\304','Ö':'\\326','Ü':'\\334','ß':'\\337','é':'\\351','è':'\\350','à':'\\340','á':'\\341','ó':'\\363','í':'\\355','ñ':'\\361','ç':'\\347','€':'EUR','–':'-','—':'-','’':"'",'“':'"','”':'"'};
+  return String(s??'').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/[äöüÄÖÜßéèàáóíñç€–—’“”]/g,function(ch){return map[ch]||ch}).replace(/[^\x20-\x7E\\]/g,'?');
 }
+function pdfText(x,y,size,text,bold){
+  return 'BT /F'+(bold?2:1)+' '+size+' Tf '+x+' '+y+' Td ('+pdfEsc(text)+') Tj ET\\n';
+}
+function pdfLine(x1,y1,x2,y2,width){
+  return (width||0.6)+' w '+x1+' '+y1+' m '+x2+' '+y2+' l S\\n';
+}
+function pdfRect(x,y,w,h,fillGray,strokeGray){
+  fillGray=fillGray==null?0.96:fillGray;strokeGray=strokeGray==null?0.82:strokeGray;
+  return 'q '+fillGray+' g '+strokeGray+' G '+x+' '+y+' '+w+' '+h+' re B Q\\n';
+}
+function wrapPdfText(text,maxChars){
+  maxChars=maxChars||82;
+  const words=String(text||'').split(/\s+/).filter(Boolean),lines=[];let line='';
+  for(const w of words){const next=line?line+' '+w:w;if(next.length>maxChars&&line){lines.push(line);line=w}else line=next}
+  if(line)lines.push(line);return lines;
+}
+function buildLocalPdf(r){
+  const pageW=595,pageH=842,margin=44,pages=[];let ops='',y=pageH-52;
+  function newPage(){
+    if(ops)pages.push(ops);ops='';y=pageH-52;
+    ops+=pdfText(margin,y,22,'PillPlan - Medikamenten- & Einnahmebericht',true);y-=24;
+    ops+=pdfText(margin,y,10,'Erstellt: '+reportDate(today())+'  |  '+reportDate(r.start)+' - '+reportDate(r.end)+'  |  '+planTimeZone(),false);y-=28;
+  }
+  function ensure(h){if(y-h<56)newPage()}
+  function heading(t){ensure(28);ops+=pdfText(margin,y,14,t,true);y-=20}
+  function bodyLine(t,bold){ensure(16);ops+=pdfText(margin,y,10,t,!!bold);y-=14}
+  function wrapped(t,max){for(const line of wrapPdfText(t,max||82))bodyLine(line,false)}
+  newPage();
+  ensure(74);
+  const bw=155,bh=58,g=10,by=y-bh+8;
+  ops+=pdfRect(margin,by,bw,bh);ops+=pdfRect(margin+bw+g,by,bw,bh);ops+=pdfRect(margin+(bw+g)*2,by,bw,bh);
+  ops+=pdfText(margin+12,y-8,18,String(r.stats.due),true);ops+=pdfText(margin+12,y-29,9,'Geplante Einnahmen',false);
+  ops+=pdfText(margin+bw+g+12,y-8,18,String(r.stats.done),true);ops+=pdfText(margin+bw+g+12,y-29,9,'Dokumentiert',false);
+  ops+=pdfText(margin+(bw+g)*2+12,y-8,18,String(r.stats.pct)+'%',true);ops+=pdfText(margin+(bw+g)*2+12,y-29,9,'Dokumentationsquote',false);
+  y=by-24;
+
+  heading('Medikamente im Zeitraum');
+  if(!r.medicationRows.length){wrapped(tr('reportNoData'))}
+  else{
+    for(const m of r.medicationRows){
+      ensure(56);bodyLine(m.name+(m.dose?' · '+m.dose:''),true);bodyLine(tr('reportTimes')+': '+m.times.join(' · '),false);
+      if(m.instructions)wrapped(m.instructions);if(m.expiryDate)bodyLine(tr('expiry')+': '+reportDate(m.expiryDate),false);
+      ops+=pdfLine(margin,y+2,pageW-margin,y+2,0.4);y-=8;
+    }
+  }
+
+  heading('Einnahmedokumentation');
+  if(!r.dayRows.length){wrapped(tr('reportNoData'))}
+  else{
+    ensure(24);const x=[margin,118,292,382];
+    ops+=pdfText(x[0],y,9,'Datum',true);ops+=pdfText(x[1],y,9,'Medikament',true);ops+=pdfText(x[2],y,9,'Zeit',true);ops+=pdfText(x[3],y,9,'Status',true);
+    y-=12;ops+=pdfLine(margin,y,pageW-margin,y,0.5);y-=12;
+    for(const row of r.dayRows){
+      ensure(20);const med=(row.name+(row.dose?' '+row.dose:'')).slice(0,27);
+      ops+=pdfText(x[0],y,9,reportDate(row.date),false);ops+=pdfText(x[1],y,9,med,false);ops+=pdfText(x[2],y,9,row.time,false);ops+=pdfText(x[3],y,9,row.label,false);
+      y-=14;ops+=pdfLine(margin,y+4,pageW-margin,y+4,0.25);
+    }
+  }
+  y-=18;heading('Hinweis');
+  wrapped('PillPlan erstellt diesen Bericht lokal auf diesem Gerät. Es erfolgt keine automatische Datenübertragung.',88);y-=4;
+  wrapped('Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',88);
+  if(ops)pages.push(ops);
+
+  const objects=[];objects[1]='<< /Type /Catalog /Pages 2 0 R >>';objects[3]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';objects[4]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+  const kids=[];let objNum=5;
+  for(const content of pages){
+    const pageObj=objNum++,contentObj=objNum++;kids.push(pageObj+' 0 R');
+    objects[pageObj]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pageW+' '+pageH+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentObj+' 0 R >>';
+    objects[contentObj]='<< /Length '+content.length+' >>\\nstream\\n'+content+'endstream';
+  }
+  objects[2]='<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>';
+  let pdf='%PDF-1.4\\n%PDFP\\n',offsets=[0];
+  for(let i=1;i<objects.length;i++){if(!objects[i])continue;offsets[i]=pdf.length;pdf+=i+' 0 obj\\n'+objects[i]+'\\nendobj\\n'}
+  const xref=pdf.length;pdf+='xref\\n0 '+objects.length+'\\n0000000000 65535 f \\n';
+  for(let i=1;i<objects.length;i++){pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \\n'}
+  pdf+='trailer\\n<< /Size '+objects.length+' /Root 1 0 R >>\\nstartxref\\n'+xref+'\\n%%EOF';
+  return new Blob([pdf],{type:'application/pdf'});
+}
+async function openPrintableReport(r){
+  const blob=buildLocalPdf(r),filename='PillPlan_Bericht_'+today()+'.pdf';
+  if(navigator.share&&navigator.canShare){
+    try{
+      const file=new File([blob],filename,{type:'application/pdf'});
+      if(navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'PillPlan Medikamentenbericht'});return}
+    }catch(e){if(e&&e.name==='AbortError')return}
+  }
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},60000);
+}
+
 async function showMedicationReport(daysCount=7){
   ensureReportStyles();
   const r=await buildMedicationReport(daysCount);
