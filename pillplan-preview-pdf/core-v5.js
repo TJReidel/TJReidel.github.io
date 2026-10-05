@@ -16,8 +16,8 @@ const TX={
  ru:{today:'Сегодня',documentation:'Документация',documented:'отмечено',punctuality:'Вовремя',week1:'1 неделя',week2:'2 недели',week3:'3 недели',month1:'1 месяц',plan:'ПЛАН',todayNav:'СЕГОДНЯ',settingsNav:'НАСТРОЙКИ',add:'ДОБАВИТЬ',language:'Язык',languageSub:'Язык приложения',settings:'Настройки'},
  pt:{today:'Hoje',documentation:'Documentação',documented:'documentado',punctuality:'Pontualidade',week1:'1 semana',week2:'2 semanas',week3:'3 semanas',month1:'1 mês',plan:'PLANO',todayNav:'HOJE',settingsNav:'DEFINIÇÕES',add:'ADICIONAR',language:'Idioma',languageSub:'Idioma da aplicação',settings:'Definições'}
 };
-Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Medikamente und Einnahmen als PDF oder Ausdruck',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht erstellen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'Als PDF / Drucken',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.'});
-Object.assign(TX.en,{report:'Medication report',reportSub:'Medications and intake history as PDF or printout',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'Create report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'PDF / Print',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.'});
+Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Medikamente und Einnahmen als PDF oder Ausdruck',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht erstellen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'Druckansicht öffnen',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.'});
+Object.assign(TX.en,{report:'Medication report',reportSub:'Medications and intake history as PDF or printout',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'Create report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'Open print view',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.'});
 for(const c of Object.keys(LANGS))TX[c]={...TX.en,...TX[c]};
 function detectLang(){const saved=localStorage.getItem('pillplan_lang');if(saved&&LANGS[saved])return saved;const p=(navigator.language||'de').toLowerCase().split('-')[0];return LANGS[p]?p:'de'}
 let lang=detectLang(),db,view='today',period=7;
@@ -167,11 +167,7 @@ function reportHTML(r){
 }
 
 function openPrintableReport(r){
-  const w=window.open('','_blank');
-  if(!w){alert('Druckansicht konnte nicht geöffnet werden. Bitte Pop-ups für diese Seite erlauben.');return;}
-  const html=reportHTML(r);
-  w.document.open();
-  w.document.write(`<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PillPlan Bericht ${today()}</title><style>
+  const printable=`<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PillPlan Bericht ${today()}</title><style>
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#fff;color:#171411}
     .print-wrap{max-width:820px;margin:0 auto;padding:22px}
     .pp-report-sheet{background:#fff;color:#171411;padding:0}
@@ -185,13 +181,19 @@ function openPrintableReport(r){
     .pp-report-table{width:100%;border-collapse:collapse;font-size:10px}.pp-report-table th,.pp-report-table td{padding:7px 5px;border-bottom:1px solid #e7e0d8;text-align:left;vertical-align:top}.pp-report-table th{font-weight:900}
     .pp-report-status{font-weight:800}.pp-report-status.green{color:#1f7069}.pp-report-status.yellow{color:#7b5c16}.pp-report-status.red{color:#9f3025}.pp-report-status.unrated,.pp-report-status.open{color:#5d554e}
     .pp-report-disclaimer{margin-top:18px;padding-top:12px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
-    .print-actions{position:sticky;bottom:0;background:#fff;padding:12px 0 4px;display:flex;gap:10px}
-    .print-actions button{flex:1;border:0;border-radius:12px;padding:14px;font-size:17px;font-weight:800}
-    .print-actions .primary{background:#2a7c74;color:#fff}.print-actions .secondary{background:#eee8df;color:#2b2723}
-    @media print{.print-actions{display:none!important}.print-wrap{max-width:none;padding:12mm}.pp-report-table{font-size:9pt}.pp-report-disclaimer{font-size:8.5pt}}
-  </style></head><body><div class="print-wrap">${html}<div class="print-actions"><button class="secondary" onclick="window.close()">Schließen</button><button class="primary" onclick="window.print()">PDF / Drucken</button></div></div></body></html>`);
-  w.document.close();
-  w.focus();
+    @media print{.print-wrap{max-width:none;padding:12mm}.pp-report-table{font-size:9pt}.pp-report-disclaimer{font-size:8.5pt}}
+  </style></head><body><div class="print-wrap">${reportHTML(r)}</div></body></html>`;
+  const blob=new Blob([printable],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.target='_blank';
+  a.rel='noopener';
+  a.download=`PillPlan_Bericht_${today()}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 async function showMedicationReport(daysCount=7){
   ensureReportStyles();
