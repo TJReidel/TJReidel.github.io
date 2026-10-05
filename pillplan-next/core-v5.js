@@ -175,11 +175,11 @@ function pdfText(x,y,size,text,bold){
   return 'BT /F'+(bold?2:1)+' '+size+' Tf '+x+' '+y+' Td ('+pdfEsc(text)+') Tj ET\\n';
 }
 function pdfLine(x1,y1,x2,y2,width){
-  return (width||0.6)+' w '+x1+' '+y1+' m '+x2+' '+y2+' l S\\n';
+  return (width||0.6)+' w '+x1+' '+y1+' m '+x2+' '+y2+' l S\n';
 }
 function pdfRect(x,y,w,h,fillGray,strokeGray){
   fillGray=fillGray==null?0.96:fillGray;strokeGray=strokeGray==null?0.82:strokeGray;
-  return 'q '+fillGray+' g '+strokeGray+' G '+x+' '+y+' '+w+' '+h+' re B Q\\n';
+  return 'q '+fillGray+' g '+strokeGray+' G '+x+' '+y+' '+w+' '+h+' re B Q\n';
 }
 function wrapPdfText(text,maxChars){
   maxChars=maxChars||82;
@@ -239,14 +239,14 @@ function buildLocalPdf(r){
   for(const content of pages){
     const pageObj=objNum++,contentObj=objNum++;kids.push(pageObj+' 0 R');
     objects[pageObj]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pageW+' '+pageH+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentObj+' 0 R >>';
-    objects[contentObj]='<< /Length '+content.length+' >>\\nstream\\n'+content+'endstream';
+    objects[contentObj]='<< /Length '+content.length+'  >>\nstream\n'+content+'endstream';
   }
   objects[2]='<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+pages.length+' >>';
-  let pdf='%PDF-1.4\\n%PDFP\\n',offsets=[0];
-  for(let i=1;i<objects.length;i++){if(!objects[i])continue;offsets[i]=pdf.length;pdf+=i+' 0 obj\\n'+objects[i]+'\\nendobj\\n'}
-  const xref=pdf.length;pdf+='xref\\n0 '+objects.length+'\\n0000000000 65535 f \\n';
-  for(let i=1;i<objects.length;i++){pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \\n'}
-  pdf+='trailer\\n<< /Size '+objects.length+' /Root 1 0 R >>\\nstartxref\\n'+xref+'\\n%%EOF';
+  let pdf='%PDF-1.4\n%PDFP\n',offsets=[0];
+  for(let i=1;i<objects.length;i++){if(!objects[i])continue;offsets[i]=pdf.length;pdf+=i+' 0 obj\n'+objects[i]+'\nendobj\n'}
+  const xref=pdf.length;pdf+='xref\n0 '+objects.length+'\n0000000000 65535 f \n';
+  for(let i=1;i<objects.length;i++){pdf+=String(offsets[i]||0).padStart(10,'0')+' 00000 n \n'}
+  pdf+='trailer\n<< /Size '+objects.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
   return new Blob([pdf],{type:'application/pdf'});
 }
 async function openPrintableReport(r){
