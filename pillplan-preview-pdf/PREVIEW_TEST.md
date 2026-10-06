@@ -20,14 +20,20 @@ The preview copy intentionally disables Service Worker registration so it cannot
 ## Test focus
 1. App starts without fatal error.
 2. Existing medication data can be created in the preview IndexedDB.
-3. Settings -> Medikamentenbericht -> Bericht erstellen.
+3. Settings -> Medikamentenbericht -> Bericht erstellen -> Zeitraum -> Vorschau -> Drucken / PDF.
 4. 7 / 14 / 21 / 30 day periods render.
 5. Medication list, dose, times, doctor instructions and MHD display when present.
 6. Green / Yellow / Red / backfilled / open states match the existing event model.
-7. Print opens the browser/system print dialog.
-8. On iPhone, “Drucken” can be converted/saved as PDF.
+7. There is no separate Settings print path; report output is reached only through Drucken / PDF inside the report.
+8. On iPhone, “Drucken / PDF” opens the print-optimised output and can be printed or converted/saved/shared as PDF.
 9. Today / Plan / Add / Settings remain functional.
 10. No automatic external data transfer occurs.
 
 ## Important
 This preview is a browser test surface only. It is not the production release and must not be merged to `main` before STABLE 1 and STABLE 2 pass.
+
+
+## Consolidation check
+- Preview and print/PDF must use the same `buildMedicationReport()` data model.
+- Preview and print/PDF must use the same `reportHTML()` renderer.
+- No duplicate report calculations or separate status logic.
