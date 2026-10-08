@@ -88,3 +88,15 @@ Einstellungen → Medikamentenbericht → Bericht erstellen → Zeitraum 7/14/21
 3. Vorschau und Druck/PDF zeigen identische Reportdaten.
 4. iPhone öffnet die druckoptimierte Ansicht zuverlässig.
 5. Heute / Plan / Hinzufügen / Einstellungen / Backup-Restore bleiben regressionsfrei.
+
+## Technische Prüfung 2026-10-08
+Status: TECHNICAL REPORT TESTS PASS / DEVICE & UI REGRESSION PENDING
+
+- `node pillplan-next/medication-report.tests.cjs`: PASS für Produkt- und Preview-Runtime.
+- 7/14/21/30 Tage, Summen/Quote, Grün/Gelb/Rot/Nachgetragen/Offen, Undo und Ereignisreihenfolge geprüft.
+- Historische Planänderungen, Start-/Enddaten, leere Daten und Text-Escaping geprüft.
+- Druckansicht enthält exakt das HTML desselben Report-Modells wie die Vorschau.
+- Syntaxprüfung beider Runtimes bestanden; vorhandene Adherence-/Statistics-Tests bestanden. Diese Tests ersetzen keine Bedienprüfung der aktuellen Runtime.
+- Preview-Datenbank und Sprache/Zeitzone von der Produktiv-App getrennt. Preview startet leer; Testdaten verwenden oder ein Backup bewusst importieren. Keine automatische Migration, keine Löschung produktiver Daten.
+
+Offen: echter Safari-/iPhone-Systemdruck/PDF, visuelle A4-Prüfung, Offline-Test und Bedienregression Heute/Plan/Hinzufügen/Bearbeiten/Einnahme/Einstellungen/Backup-Restore/Zeitzonenwechsel. STABLE 1 und zeitversetzter STABLE 2 sind noch nicht bestätigt. Kein Merge nach main.

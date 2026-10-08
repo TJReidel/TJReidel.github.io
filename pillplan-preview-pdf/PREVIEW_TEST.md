@@ -15,7 +15,9 @@ Files:
 - design-master-v4.css
 - design-master.css
 
-The preview copy intentionally disables Service Worker registration so it cannot interfere with the productive `/pillplan-next/` cache or scope.
+The preview uses its own IndexedDB `pillplan-preview-pdf-db` and separate language/time-zone localStorage keys. Service Worker registration is disabled. It does not modify production data, settings or cache.
+
+The isolated preview starts empty. Use test medication data, or explicitly import a production backup via Settings. Existing production data remain in `pillplan-next-db`; no automatic migration or clearing occurs.
 
 ## Test focus
 1. App starts without fatal error.
