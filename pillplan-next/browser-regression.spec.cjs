@@ -156,3 +156,39 @@ test('closure: correction note, offline write and reopen',async({page,context})=
  expect(events).toHaveLength(3);expect(events.some(e=>e.note==='QA correction'&&e.type==='undo')).toBe(true);
  await context.setOffline(false);await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
 });
+
+test('privacy closure: no app speech capture or automatic medication transfer, data notes offline',async({page,context})=>{
+ const requests=[],errors=[];
+ context.on('request',r=>requests.push({url:r.url(),method:r.method(),body:r.postData()}));
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{
+  window.__speechCalls=0;
+  const blocked=function(){window.__speechCalls++;throw Error('Unexpected speech capture')};
+  window.SpeechRecognition=blocked;window.webkitSpeechRecognition=blocked;
+  navigator.mediaDevices.getUserMedia=blocked;
+ });
+ await page.goto('http://127.0.0.1:8765/pillplan-next/');
+ await page.locator('[data-v="add"]').click();
+ await expect(page.locator('#pp-voice')).toHaveCount(0);
+ await page.locator('#med-name').fill('FICTIONAL_PRIVACY_CANARY');
+ await page.locator('#add-med').click();
+ await page.locator('[data-toggle]').first().click();
+ await page.locator('[data-v="settings"]').click();
+ await page.locator('#pp-data-notice summary').click();
+ await expect(page.locator('#pp-data-notice')).toContainText(/nicht automatisch|does not automatically/);
+ await expect(page.locator('#pp-data-notice')).toContainText('GitHub Pages');
+ await expect(page.locator('#pp-data-notice')).toContainText(/keine vollständige|do not replace/);
+ await page.locator('#report-btn').click();
+ await expect(page.locator('#pp-modal')).toContainText('FICTIONAL_PRIVACY_CANARY');
+ await page.locator('#pp-report-close').click();
+ await page.evaluate(()=>navigator.serviceWorker.ready);
+ await context.setOffline(true);
+ await page.reload();
+ await page.locator('[data-v="settings"]').click();
+ await page.locator('#pp-data-notice summary').click();
+ await expect(page.locator('#pp-data-notice')).toContainText(/keine eigene Spracherkennung|does not use its own speech recognition/);
+ expect(await page.evaluate(()=>window.__speechCalls)).toBe(0);
+ expect(requests.every(r=>r.method==='GET'&&new URL(r.url).origin==='http://127.0.0.1:8765'&&!r.body&&!r.url.includes('FICTIONAL_PRIVACY_CANARY'))).toBeTruthy();
+ expect(errors).toEqual([]);
+ await context.setOffline(false);
+});
