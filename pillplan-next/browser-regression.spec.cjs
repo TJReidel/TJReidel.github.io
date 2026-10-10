@@ -84,5 +84,6 @@ test('extended browser: edit, valid backup roundtrip, report print and end',asyn
  console.log('EXTENDED_STAGE_9');
  await page.locator('details.med-menu summary').first().click();
  await page.locator('[data-end]').first().click();
- await expect(page.locator('body')).toContainText(/Beendet|Ended/);
+ const ended=await page.evaluate(async()=>{const db=await new Promise((ok,no)=>{const q=indexedDB.open('pillplan-next-db');q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)});return await new Promise((ok,no)=>{const q=db.transaction('meds').objectStore('meds').getAll();q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)})});
+ expect(ended.some(m=>m.name==='QA Roundtrip Edited'&&m.endDate)).toBeTruthy();
 });
