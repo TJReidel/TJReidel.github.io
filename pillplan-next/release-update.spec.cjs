@@ -74,7 +74,7 @@ test('release update: production baseline to candidate, same origin, offline and
   await page.locator('#backup-file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{invalid')});
   await page.locator('#import-btn').click();expect(await snapshot()).toEqual(before);
   await page.reload();await context.setOffline(true);await page.reload();
-  await expect(page.locator('.dose-name').first()).toHaveText('FICTIONAL_UPDATE_CANARY');
+  await expect(page.locator('.dose-name').first()).toHaveText('FICTIONAL_UPDATE_CANARY QA strength');
   await page.locator('[data-toggle]').first().click();
   await expect(page.locator('.dose-status').first()).not.toContainText(/Dokumentiert|Documented/);
   const offline=await snapshot();expect(offline.events.length).toBe(before.events.length+1);
