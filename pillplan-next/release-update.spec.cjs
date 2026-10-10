@@ -45,6 +45,9 @@ test('release update: production baseline to candidate, same origin, offline and
  }
  try{
   await page.goto(url);await expect(page.locator('.bottom-nav')).toBeVisible();
+  // Explicitly choose a language: a valid import persists the language in its backup.
+  // An inferred browser default is not initially stored by the legacy runtime.
+  await page.locator('[data-v="settings"]').click();await page.locator('#language-select').selectOption('de');
   await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill('FICTIONAL_UPDATE_CANARY');
   await page.locator('#med-dose').fill('QA strength');await page.locator('#add-med').click();
   await page.locator('[data-toggle]').first().click();

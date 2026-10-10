@@ -20,6 +20,8 @@ Ein PR-bezogener ChatGPT-Webhook-Wächter kann Commitänderungen aufgreifen, die
 
 Produktionsbaseline: `a4ad82dc21daa1d4848f0aa670b5fcc8f15a3f54`; ursprüngliche Quelle bleibt im Git-Verlauf erhalten. Vor Freigabe main und tatsächliche Produktionsdateien erneut abgleichen. Kein Produktiv-Browserzugriff in Cloud-Tests.
 
+Statischer Produktionsabgleich am 10.10.2026: `index.html`, `core-v5.js` und `sw.js` unter `https://tjreidel.github.io/pillplan-next/` sind bytegleich mit dieser Baseline. Nur statische HTTP-Abrufe, keine Browserdaten und kein App-Test auf der Produktionsdomain.
+
 1. Vor einem später freigegebenen Update: Nutzer sichert ein aktuelles Backup außerhalb der App; echte Datei verbleibt beim Nutzer. Stand und Datum dokumentieren, ohne Patientendaten ins Repository zu übernehmen.
 2. Ein bestimmter Commit darf erst nach vollständiger Freigabe und abgeschlossenem Recordati-Prozess nach main. Januar 2027 ist lediglich eine Planung, kein Trigger und keine Freigabe.
 3. Update zuerst online vollständig laden; aktiven Service Worker und ausgelieferte Runtime prüfen. Offlinefähigkeit erst danach prüfen.
@@ -52,7 +54,7 @@ Produktionsbaseline: `a4ad82dc21daa1d4848f0aa670b5fcc8f15a3f54`; ursprüngliche 
 - DSGVO Art. 13: Name/Kontakt, Zwecke/Rechtsgrundlagen, Empfänger, gegebenenfalls Drittlandangaben; zusätzlich Fristen/Kriterien und Rechte. https://ao.bundesfinanzministerium.de/ao/2025/Datenschutz-Grundverordnung/inhalt.html sowie https://www.lda.bayern.de/de/thema_informationspflichten.html
 - § 5 DDG betrifft geschäftsmäßige, in der Regel gegen Entgelt angebotene digitale Dienste: https://www.gesetze-im-internet.de/ddg/__5.html . Ohne bestätigten Angebotszweck kein pauschales Urteil zur Anwendbarkeit.
 - § 18 MStV kann bei nicht ausschließlich persönlichen/familiären Telemedien Name und Anschrift verlangen, unabhängig von obiger DDG-Einordnung: https://www.gesetze-bayern.de/Content/Document/MStV-18 . Publikum und Angebotszweck bestätigen.
-- Notwendige Browser-Speicherung und die Einordnung nach § 25 TDDDG vor Veröffentlichung prüfen; kein vorsorglicher Cookie-Banner ohne konkreten Bedarf. Noch keine abschließende Rechtsbewertung.
+- § 25 TDDDG: https://www.gesetze-im-internet.de/ttdsg/__25.html . Absatz 2 Nr. 2 sieht eine Ausnahme für unbedingt erforderliche Speicherung/Zugriffe zur Bereitstellung eines ausdrücklich gewünschten digitalen Dienstes vor. Als zu prüfende Einordnung kommen lokale Dokumentation und Offline-Cache dafür in Betracht; nicht pauschal auf jede Einstellung oder beliebige Erweiterung übertragen. Kein vorsorglicher Cookie-Banner ohne konkreten Bedarf. Noch keine abschließende Rechtsbewertung.
 - GitHub Pages Sicherheits-IP-Logging: https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages
 - GitHub allgemeine Datenschutzerklärung, angegebenes Wirksamkeitsdatum 27.04.2026: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement . Konkrete Pages-Rollen/Verträge/Fristen sind damit nicht vollständig geklärt.
 
