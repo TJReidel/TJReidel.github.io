@@ -81,13 +81,13 @@ function prepareBackup(obj){
   const state=obj.localStorage?.pillplan_v4 ? (typeof obj.localStorage.pillplan_v4==='string'?JSON.parse(obj.localStorage.pillplan_v4):obj.localStorage.pillplan_v4):obj;
   let meds,events,meta;
   if(Array.isArray(state.meds)&&Array.isArray(state.events)){
-    meds=state.meds.map(m=>({...m,times:normalizeTimes(m.times||[])}));events=state.events;meta=state.meta||[];
+    meds=state.meds;events=state.events;meta=state.meta||[];
   }else if(Array.isArray(state.meds)&&state.taken&&typeof state.taken==='object'&&!Array.isArray(state.taken)){
     meds=state.meds.map(m=>({id:m.id,name:m.name,times:normalizeTimes(m.times||[]),color:m.color||'#2a7c74',startDate:m.startDate||null,scheduleHistory:m.scheduleHistory||[],dose:m.dose||'',doctorInstructions:m.doctorInstructions||'',expiryDate:m.expiryDate||'',endDate:m.endDate||null}));
     events=Object.entries(state.taken).flatMap(([slot,val])=>{const tier=legacyTier(val);return tier?[{eventId:uid(),slot,type:'taken',tier,createdAt:(val&&val.takenAt)||new Date().toISOString(),legacy:true}]:[]});meta=[];
   }else throw Error('Invalid backup format');
   if(!Array.isArray(meta))throw Error('Invalid backup metadata');
-  for(const m of meds)if(!m||typeof m!=='object'||(typeof m.id!=='string'&&typeof m.id!=='number')||typeof m.name!=='string'||!m.name.trim()||!Array.isArray(m.times)||m.times.some(t=>typeof t!=='string'||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(t)))throw Error('Invalid medication record');
+  for(const m of meds)if(!m||typeof m!=='object'||(typeof m.id!=='string'&&typeof m.id!=='number')||typeof m.name!=='string'||!m.name.trim()||!Array.isArray(m.times)||m.times.some(t=>typeof t!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)))throw Error('Invalid medication record');
   for(const e of events)if(!e||typeof e!=='object'||(typeof e.eventId!=='string'&&typeof e.eventId!=='number')||typeof e.slot!=='string'||typeof e.type!=='string')throw Error('Invalid intake event');
   for(const m of meta)if(!m||typeof m!=='object'||typeof m.key!=='string')throw Error('Invalid metadata');
   for(const [items,key] of [[meds,'id'],[events,'eventId'],[meta,'key']])if(new Set(items.map(x=>x[key])).size!==items.length)throw Error('Duplicate backup keys');
