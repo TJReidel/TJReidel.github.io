@@ -43,6 +43,7 @@ test('extended browser: edit, valid backup roundtrip, report print and end',asyn
  await page.locator('#add-med').click();
  console.log('EXTENDED_STAGE_1');
  await page.locator('[data-v="plan"]').click();
+ await page.locator('details.med-menu summary').first().click();
  await page.locator('[data-edit]').first().click();
  await page.locator('#pp-edit-name').fill('QA Roundtrip Edited');
  console.log('EXTENDED_STAGE_2');
@@ -81,6 +82,7 @@ test('extended browser: edit, valid backup roundtrip, report print and end',asyn
  await page.locator('#pp-report-close').click();
  await page.locator('[data-v="plan"]').click();
  console.log('EXTENDED_STAGE_9');
+ await page.locator('details.med-menu summary').first().click();
  await page.locator('[data-end]').first().click();
  await expect(page.locator('body')).toContainText(/Beendet|Ended/);
 });
