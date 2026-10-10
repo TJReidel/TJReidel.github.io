@@ -182,6 +182,9 @@ test('privacy closure: no app speech capture or automatic medication transfer, d
  await expect(page.locator('#pp-modal')).toContainText('FICTIONAL_PRIVACY_CANARY');
  await page.locator('#pp-report-close').click();
  await page.evaluate(()=>navigator.serviceWorker.ready);
+ await page.reload();
+ await expect(page.locator('.bottom-nav')).toBeVisible();
+ await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller))).toBeTruthy();
  await context.setOffline(true);
  await page.reload();
  await page.locator('[data-v="settings"]').click();
