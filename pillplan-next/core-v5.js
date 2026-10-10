@@ -22,6 +22,9 @@ let lang=detectLang(),db,view='today',period=7;
 function tr(k,v={}){let s=(TX[lang]&&TX[lang][k])||TX.en[k]||k;for(const [a,b] of Object.entries(v))s=s.replaceAll(`{${a}}`,String(b));return s}
 function applyLang(){const cfg=LANGS[lang]||LANGS.de;document.documentElement.lang=lang;document.documentElement.dir=cfg.dir;document.title=`PillPlan v${APP_VERSION}`}
 function fmtDate(ds=today(),opts={weekday:'long',day:'numeric',month:'long'}){return new Date(ds+'T12:00:00').toLocaleDateString(LANGS[lang].locale,opts)}
+Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Eigene Medikamente und Einnahmen im Überblick',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht erstellen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'Drucken / PDF',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.',reportSaveHint:'Drucken / PDF öffnet die druckoptimierte Ansicht desselben Berichts. Auf dem iPhone dort über Teilen → Drucken; anschließend kann der Bericht gedruckt oder als PDF gesichert bzw. geteilt werden.'});
+Object.assign(TX.en,{report:'Medication report',reportSub:'Your medications and intake history at a glance',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'Create report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'Print / PDF',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.',reportSaveHint:'Print / PDF opens the print-optimised view of this same report. On iPhone use Share → Print there; the report can then be printed or saved/shared as a PDF.'});
+
 function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('meds'))d.createObjectStore('meds',{keyPath:'id'});if(!d.objectStoreNames.contains('events')){const s=d.createObjectStore('events',{keyPath:'eventId'});s.createIndex('slot','slot',{unique:false});s.createIndex('createdAt','createdAt',{unique:false})}if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta',{keyPath:'key'})};r.onsuccess=()=>{db=r.result;resolve(db)};r.onerror=()=>reject(r.error)})}
 function tx(s,m='readonly'){return db.transaction(s,m).objectStore(s)}
 function all(s){return new Promise((res,rej)=>{const r=tx(s).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}
@@ -73,7 +76,35 @@ function startVoice(){const input=document.getElementById('med-name'),SR=window.
 function enhanceVoice(){const input=document.getElementById('med-name');if(!input||document.getElementById('pp-voice'))return;const wrap=document.createElement('div');wrap.className='pp-voice-wrap';input.parentNode.insertBefore(wrap,input);wrap.appendChild(input);const b=document.createElement('button');b.type='button';b.id='pp-voice';b.className='pp-voice-btn';b.textContent='🎙️';b.onclick=startVoice;wrap.appendChild(b);if(!voiceAvailable())b.classList.add('unsupported')}
 async function exportBackup(){const payload={schema:'pillplan-next-consolidated-v6',runtime:RUNTIME_VERSION,exportedAt:new Date().toISOString(),language:lang,timeZone:planTimeZone(),deviceTimeZone:deviceTimeZone(),meds:await all('meds'),events:await all('events'),meta:await all('meta')};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`PillPlan_Backup_${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function legacyTier(v){if(v===true)return'unrated';if(v===false||v==null)return null;if(typeof v==='object'){if(v.taken===false)return null;return v.tier||'unrated'}return null}
-async function importBackup(file){const obj=JSON.parse(await file.text());if(obj&&Array.isArray(obj.meds)&&Array.isArray(obj.events)){await clear('meds');await clear('events');await clear('meta');for(const m of obj.meds)await put('meds',{...m,times:normalizeTimes(m.times||[])});for(const e of obj.events)await put('events',e);for(const x of obj.meta||[])await put('meta',x);if(obj.language&&LANGS[obj.language]){lang=obj.language;localStorage.setItem('pillplan_lang',lang)}if(obj.timeZone)localStorage.setItem('pillplan_timezone',obj.timeZone);applyLang();await render();return}let state=obj;if(obj?.localStorage?.pillplan_v4)state=typeof obj.localStorage.pillplan_v4==='string'?JSON.parse(obj.localStorage.pillplan_v4):obj.localStorage.pillplan_v4;if(!state||!Array.isArray(state.meds)||typeof state.taken!=='object')throw new Error('Invalid backup');await clear('meds');await clear('events');for(const m of state.meds)await put('meds',{id:m.id,name:m.name,times:normalizeTimes(m.times||[]),color:m.color||'#2a7c74',startDate:m.startDate||null,scheduleHistory:m.scheduleHistory||[],dose:m.dose||'',doctorInstructions:m.doctorInstructions||'',expiryDate:m.expiryDate||'',endDate:m.endDate||null});for(const [slot,val] of Object.entries(state.taken||{})){const tier=legacyTier(val);if(!tier)continue;await put('events',{eventId:uid(),slot,type:'taken',tier,createdAt:(val&&val.takenAt)||new Date().toISOString(),legacy:true})}await render()}
+function prepareBackup(obj){
+  if(!obj||typeof obj!=='object')throw Error('Invalid backup');
+  const state=obj.localStorage?.pillplan_v4 ? (typeof obj.localStorage.pillplan_v4==='string'?JSON.parse(obj.localStorage.pillplan_v4):obj.localStorage.pillplan_v4):obj;
+  let meds,events,meta;
+  if(Array.isArray(state.meds)&&Array.isArray(state.events)){
+    meds=state.meds.map(m=>({...m,times:normalizeTimes(m.times||[])}));events=state.events;meta=state.meta||[];
+  }else if(Array.isArray(state.meds)&&state.taken&&typeof state.taken==='object'&&!Array.isArray(state.taken)){
+    meds=state.meds.map(m=>({id:m.id,name:m.name,times:normalizeTimes(m.times||[]),color:m.color||'#2a7c74',startDate:m.startDate||null,scheduleHistory:m.scheduleHistory||[],dose:m.dose||'',doctorInstructions:m.doctorInstructions||'',expiryDate:m.expiryDate||'',endDate:m.endDate||null}));
+    events=Object.entries(state.taken).flatMap(([slot,val])=>{const tier=legacyTier(val);return tier?[{eventId:uid(),slot,type:'taken',tier,createdAt:(val&&val.takenAt)||new Date().toISOString(),legacy:true}]:[]});meta=[];
+  }else throw Error('Invalid backup format');
+  if(!Array.isArray(meta))throw Error('Invalid backup metadata');
+  for(const m of meds)if(!m||typeof m!=='object'||(typeof m.id!=='string'&&typeof m.id!=='number')||typeof m.name!=='string'||!m.name.trim()||!Array.isArray(m.times)||m.times.some(t=>typeof t!=='string'||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(t)))throw Error('Invalid medication record');
+  for(const e of events)if(!e||typeof e!=='object'||(typeof e.eventId!=='string'&&typeof e.eventId!=='number')||typeof e.slot!=='string'||typeof e.type!=='string')throw Error('Invalid intake event');
+  for(const m of meta)if(!m||typeof m!=='object'||typeof m.key!=='string')throw Error('Invalid metadata');
+  for(const [items,key] of [[meds,'id'],[events,'eventId'],[meta,'key']])if(new Set(items.map(x=>x[key])).size!==items.length)throw Error('Duplicate backup keys');
+  return{meds,events,meta,language:obj.language,timeZone:obj.timeZone};
+}
+async function importBackup(file){
+  const data=prepareBackup(JSON.parse(await file.text()));
+  await new Promise((resolve,reject)=>{
+    const transaction=db.transaction(['meds','events','meta'],'readwrite');
+    transaction.oncomplete=()=>resolve();transaction.onabort=()=>reject(transaction.error||Error('Backup import failed'));transaction.onerror=()=>{};
+    for(const name of ['meds','events','meta'])transaction.objectStore(name).clear();
+    for(const name of ['meds','events','meta'])for(const item of data[name])transaction.objectStore(name).put(item);
+  });
+  if(data.language&&LANGS[data.language]){lang=data.language;localStorage.setItem('pillplan_lang',lang)}
+  if(data.timeZone)localStorage.setItem('pillplan_timezone',data.timeZone);
+  applyLang();await render();
+}
 async function shareSummary(){const meds=await all('meds'),s=await todayStats(),st=await streak(),lines=[`PillPlan – ${fmtDate()}`,`${tr('today')}: ${s.done}/${s.tot} ${tr('documented')} (${s.pct}%)`,`${st} ${st===1?tr('day'):tr('days')} ${tr('inRow')}`,'',...meds.map(m=>`${m.name}${m.dose?' '+m.dose:''}: ${timesForDate(m,today()).join(', ')}`)],text=lines.join('\n');try{if(navigator.share)await navigator.share({title:'PillPlan',text});else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert(tr('shareCopied'))}else alert(text)}catch(e){if(e?.name!=='AbortError')alert(tr('shareFail'))}}
 function progressRing(pct){const r=29,c=2*Math.PI*r,off=c-(Math.max(0,Math.min(100,pct))/100)*c;return `<div class="ring-wrap" aria-label="${pct}%"><svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true"><circle class="ring-track" cx="36" cy="36" r="29"></circle><circle class="ring-fill" cx="36" cy="36" r="29" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"></circle></svg><div class="ring-pct">${pct}%</div></div>`}
 function dayVisual(cls){if(cls==='green')return'done';if(cls==='yellow')return'tier-yellow';if(cls==='red')return'tier-red';if(cls==='unrated')return'unrated';if(cls==='partial')return'partial';return''}
@@ -85,9 +116,148 @@ async function render(){applyLang();runtimeStyles();const app=document.getElemen
 if(view==='today'){const active=meds.filter(m=>timesForDate(m,td).length);if(s.tot&&s.done===s.tot)html+=`<div class="all-done"><div class="all-done-icon">✓</div><div class="all-done-text">${tr('allDone')}</div><div class="all-done-sub">${tr('allDoneSub')}</div></div>`;else if(s.tot)html+=`<div class="next-banner"><div>💊</div><div><div class="next-banner-text">${esc(praise(s))}</div><div class="next-banner-sub">${tr('tip')}</div></div></div>`;if(!active.length)html+=`<div class="empty"><div class="empty-icon">💊</div><div class="empty-text">${tr('noneToday')}</div></div>`;const warnings=[];for(const m of active){const d=daysUntil(m.expiryDate);if(d!==null&&d<=30)warnings.push(d<0?tr('mhdExpired',{name:m.name}):tr('mhdDays',{name:m.name,n:d}))}if(warnings.length)html+=`<div class="mhd-banner"><div>📅</div><div class="mhd-text">${warnings.map(esc).join('<br>')}</div></div>`;for(const m of active)for(const t of timesForDate(m,td)){const e=map[slotKey(m.id,td,t)],on=e&&e.type==='taken',cls=tierClass(e);html+=`<article class="dose-card ${cls}"><div class="dose-icon" style="background:${esc(m.color||'#e8f4f3')}22">${on?'✓':'💊'}</div><div class="dose-body"><div class="dose-name">${esc(m.name)}${m.dose?' '+esc(m.dose):''}</div><div class="dose-time">${esc(t)}</div><div class="dose-status ${cls||'pending'}">${statusText(e)}</div>${m.doctorInstructions?`<div class="doctor-note">${esc(m.doctorInstructions)}</div>`:''}</div><button class="check-btn ${!on?'check-btn-off':e.tier==='unrated'?'check-btn-neutral':'check-btn-on'}" data-toggle="${m.id}" data-time="${esc(t)}">${on?'✓':'○'}</button></article>`}html+=`<div class="disclaimer"><div>ℹ️</div><div class="disclaimer-text">${tr('doctor')}</div></div>`}
 if(view==='plan'){html+=`<details class="status-legend"><summary>${tr('legend')}</summary><div class="status-legend-body"><div class="status-legend-row"><span class="status-swatch green">✓</span>${tr('green')}</div><div class="status-legend-row"><span class="status-swatch yellow">!</span>${tr('yellow')}</div><div class="status-legend-row"><span class="status-swatch red">!</span>${tr('red')}</div><div class="status-legend-row"><span class="status-swatch neutral">✓</span>${tr('neutral')}</div><div class="status-legend-row"><span class="status-swatch open">○</span>${tr('openLegend')}</div></div></details><div class="section-label">${periodLabel()} · ${ps.done}/${ps.due} · ${ps.pct}% ${tr('documented')}</div>`;const days=pastDays(period);for(const m of meds){if(!days.some(d=>timesForDate(m,d).length))continue;const current=timesForDate(m,td);html+=`<section class="plan-med"><div class="plan-med-header"><div><div class="plan-med-name"><span class="color-dot" style="background:${esc(m.color||'#2a7c74')}"></span>${esc(m.name)}${m.dose?' '+esc(m.dose):''}</div><div class="plan-med-time">${m.endDate?tr('endedOn',{date:fmtDate(m.endDate,{day:'2-digit',month:'2-digit',year:'numeric'})}):(current.length?current.join(' · '):tr('noneCurrent'))}</div></div><details class="med-menu"><summary aria-label="${esc(tr('actionsFor',{name:m.name}))}">•••</summary><div class="med-menu-popover"><button data-edit="${m.id}" ${m.endDate?'disabled':''}>${tr('edit')}</button><button class="danger" data-end="${m.id}" ${m.endDate?'disabled':''}>${m.endDate?tr('ended'):tr('end')}</button></div></details></div><div class="day-grid">`;for(const d of days){const cls=classifyDay(m,d,map),dt=new Date(d+'T12:00:00');html+=`<button class="day-cell ${dayVisual(cls)} ${d===td?'today':''}" data-day="${d}" data-mid="${m.id}"><span class="day-wd">${dt.toLocaleDateString(LANGS[lang].locale,{weekday:'short'}).slice(0,2)}</span><span class="day-num">${dt.getDate()}</span><span class="day-ico">${dayIcon(cls)}</span></button>`}html+=`</div></section>`}}
 if(view==='add')html+=`<section class="form-card"><div class="form-title">${tr('addMed')}</div><label class="form-label">${tr('medication')}</label><input id="med-name" class="form-input" placeholder="${tr('medName')}"><label class="form-label">${tr('intakeTime')}</label><div id="time-list">${timeRowsHTML(['08:00'])}</div><button type="button" id="add-time" class="secondary-action">${tr('moreTime')}</button><label class="form-label">${tr('dose')}</label><input id="med-dose" class="form-input" placeholder="${tr('dosePh')}"><label class="form-label">${tr('doctorRule')}</label><textarea id="doctor-instructions" class="form-input" rows="3" placeholder="${tr('doctorPh')}"></textarea><label class="form-label">${tr('expiry')}</label><input id="med-expiry" class="form-input" type="date"><label class="form-label">${tr('color')}</label><div class="colors-row">${['#2a7c74','#c0392b','#b08d57','#3f6ea8','#7a5ca8','#6c7a4d'].map((c,i)=>`<button type="button" class="color-btn ${i===0?'selected':''}" data-color="${c}" style="background:${c}"></button>`).join('')}</div><div class="disclaimer"><div>ℹ️</div><div class="disclaimer-text">${tr('doctor')}</div></div><button id="add-med" class="primary-action">${tr('saveMed')}</button></section>`;
-if(view==='settings'){const stats=await buildStats(30);html+=`<section class="settings-card"><div class="form-title">${tr('settings')}</div><div class="settings-row"><div><div class="settings-row-label">${tr('version')}</div></div><span>PillPlan v${APP_VERSION}</span></div><div class="settings-row"><div><div class="settings-row-label">${tr('language')}</div><div class="settings-row-sub">${tr('languageSub')}</div></div><select id="language-select" class="compact-select">${langOptions()}</select></div><div class="settings-row"><div><div class="settings-row-label">${tr('timezone')}</div><div class="settings-row-sub">${tr('timezoneSub')}</div></div><div class="timezone-control"><div class="timezone-value">${esc(planTimeZone())}</div><div class="timezone-device">${tr('timezoneDevice')}: ${esc(deviceTimeZone())}</div>${timeZoneChanged()?`<button id="timezone-accept" class="timezone-accept">${tr('timezoneAccept')}</button>`:`<div class="timezone-device">✓ ${tr('timezoneSame')}</div>`}</div></div><div class="settings-row"><div><div class="settings-row-label">${tr('data')}</div><div class="settings-row-sub">${tr('localStorage')}</div></div><span>IndexedDB</span></div><div class="settings-block"><div class="settings-row-label">${tr('backup')}</div><input id="backup-file" class="form-input" type="file" accept="application/json,.json"><button id="import-btn" class="primary-action">${tr('importBackup')}</button><button id="export-btn" class="secondary-action full">${tr('exportBackup')}</button></div></section><section class="stats-card"><div class="section-label">${tr('last30')}</div><div class="stats-hero"><strong>${stats.pct}%</strong><span>${tr('documentedIntakes')}</span></div><div class="stats-grid"><div><span class="status-swatch green">✓</span><b>${stats.green}</b><small>${tr('punctual')}</small></div><div><span class="status-swatch yellow">!</span><b>${stats.yellow}</b><small>${tr('late30')}</small></div><div><span class="status-swatch red">!</span><b>${stats.red}</b><small>${tr('late45')}</small></div><div><span class="status-swatch neutral">✓</span><b>${stats.unrated}</b><small>${tr('backfilled')}</small></div></div></section><section class="settings-card"><div class="settings-row"><div><div class="settings-row-label">${tr('share')}</div><div class="settings-row-sub">${tr('shareSub')}</div></div><button id="share-btn" class="row-action">${tr('share')}</button></div><div class="settings-row"><div><div class="settings-row-label">${tr('print')}</div><div class="settings-row-sub">${tr('printSub')}</div></div><button id="print-btn" class="row-action">${tr('print')}</button></div></section>`}
+if(view==='settings'){const stats=await buildStats(30);html+=`<section class="settings-card"><div class="form-title">${tr('settings')}</div><div class="settings-row"><div><div class="settings-row-label">${tr('version')}</div></div><span>PillPlan v${APP_VERSION}</span></div><div class="settings-row"><div><div class="settings-row-label">${tr('language')}</div><div class="settings-row-sub">${tr('languageSub')}</div></div><select id="language-select" class="compact-select">${langOptions()}</select></div><div class="settings-row"><div><div class="settings-row-label">${tr('timezone')}</div><div class="settings-row-sub">${tr('timezoneSub')}</div></div><div class="timezone-control"><div class="timezone-value">${esc(planTimeZone())}</div><div class="timezone-device">${tr('timezoneDevice')}: ${esc(deviceTimeZone())}</div>${timeZoneChanged()?`<button id="timezone-accept" class="timezone-accept">${tr('timezoneAccept')}</button>`:`<div class="timezone-device">✓ ${tr('timezoneSame')}</div>`}</div></div><div class="settings-row"><div><div class="settings-row-label">${tr('data')}</div><div class="settings-row-sub">${tr('localStorage')}</div></div><span>IndexedDB</span></div><div class="settings-block"><div class="settings-row-label">${tr('backup')}</div><input id="backup-file" class="form-input" type="file" accept="application/json,.json"><button id="import-btn" class="primary-action">${tr('importBackup')}</button><button id="export-btn" class="secondary-action full">${tr('exportBackup')}</button></div></section><section class="stats-card"><div class="section-label">${tr('last30')}</div><div class="stats-hero"><strong>${stats.pct}%</strong><span>${tr('documentedIntakes')}</span></div><div class="stats-grid"><div><span class="status-swatch green">✓</span><b>${stats.green}</b><small>${tr('punctual')}</small></div><div><span class="status-swatch yellow">!</span><b>${stats.yellow}</b><small>${tr('late30')}</small></div><div><span class="status-swatch red">!</span><b>${stats.red}</b><small>${tr('late45')}</small></div><div><span class="status-swatch neutral">✓</span><b>${stats.unrated}</b><small>${tr('backfilled')}</small></div></div></section><section class="settings-card"><div class="settings-row"><div><div class="settings-row-label">${tr('report')}</div><div class="settings-row-sub">${tr('reportSub')}</div></div><button id="report-btn" class="row-action">${tr('reportCreate')}</button></div><div class="settings-row"><div><div class="settings-row-label">${tr('share')}</div><div class="settings-row-sub">${tr('shareSub')}</div></div><button id="share-btn" class="row-action">${tr('share')}</button></div><div class="settings-row"><div><div class="settings-row-label">${tr('print')}</div><div class="settings-row-sub">${tr('printSub')}</div></div><button id="print-btn" class="row-action">${tr('print')}</button></div></section>`}
 html+=`</main><nav class="bottom-nav"><button class="nav ${view==='today'?'active':''}" data-v="today"><span class="nav-icon">💊</span><span>${tr('todayNav')}</span></button><button class="nav ${view==='plan'?'active':''}" data-v="plan"><span class="nav-icon">📅</span><span>${tr('plan')}</span></button><button class="nav ${view==='add'?'active':''}" data-v="add"><span class="nav-icon">＋</span><span>${tr('add')}</span></button><button class="nav ${view==='settings'?'active':''}" data-v="settings"><span class="nav-icon">⚙️</span><span>${tr('settingsNav')}</span></button></nav>`;app.innerHTML=html;bindUI(meds,td);enhanceVoice()}
-function bindUI(meds,td){document.querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{view=b.dataset.v;await render()});const p=document.getElementById('period');if(p)p.onchange=async()=>{period=Number(p.value);await render()};document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>toggle(Number(b.dataset.toggle),td,b.dataset.time));document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editMed(Number(b.dataset.edit)));document.querySelectorAll('[data-end]').forEach(b=>b.onclick=()=>endMed(Number(b.dataset.end)));document.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{const m=meds.find(x=>x.id===Number(b.dataset.mid));if(m)chooseHistorical(m,b.dataset.day)});document.querySelectorAll('.color-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.color-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});const ls=document.getElementById('language-select');if(ls)ls.onchange=async()=>{lang=ls.value;localStorage.setItem('pillplan_lang',lang);applyLang();await render()};const tz=document.getElementById('timezone-accept');if(tz)tz.onclick=async()=>{localStorage.setItem('pillplan_timezone',deviceTimeZone());await put('meta',{key:'timeZone',value:deviceTimeZone(),confirmedAt:new Date().toISOString()});alert(tr('timezoneConfirmed'));await render()};const addTime=document.getElementById('add-time');if(addTime){addTime.onclick=()=>{const wrap=document.getElementById('time-list'),row=document.createElement('div');row.className='time-row';row.innerHTML='<input class="form-input med-time" type="time" value="12:00"><button type="button" class="time-remove">−</button>';wrap.appendChild(row);bindTimeRows()};bindTimeRows()}const add=document.getElementById('add-med');if(add)add.onclick=addMed;const imp=document.getElementById('import-btn');if(imp)imp.onclick=async()=>{const f=document.getElementById('backup-file')?.files?.[0];if(!f)return alert(tr('chooseFile'));try{await importBackup(f);alert(tr('importOk'))}catch(e){alert(tr('importFail',{err:e.message}))}};const exp=document.getElementById('export-btn');if(exp)exp.onclick=exportBackup;const sh=document.getElementById('share-btn');if(sh)sh.onclick=shareSummary;const pr=document.getElementById('print-btn');if(pr)pr.onclick=()=>window.print()}
+function bindUI(meds,td){document.querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{view=b.dataset.v;await render()});const p=document.getElementById('period');if(p)p.onchange=async()=>{period=Number(p.value);await render()};document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>toggle(Number(b.dataset.toggle),td,b.dataset.time));document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editMed(Number(b.dataset.edit)));document.querySelectorAll('[data-end]').forEach(b=>b.onclick=()=>endMed(Number(b.dataset.end)));document.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{const m=meds.find(x=>x.id===Number(b.dataset.mid));if(m)chooseHistorical(m,b.dataset.day)});document.querySelectorAll('.color-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.color-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});const ls=document.getElementById('language-select');if(ls)ls.onchange=async()=>{lang=ls.value;localStorage.setItem('pillplan_lang',lang);applyLang();await render()};const tz=document.getElementById('timezone-accept');if(tz)tz.onclick=async()=>{localStorage.setItem('pillplan_timezone',deviceTimeZone());await put('meta',{key:'timeZone',value:deviceTimeZone(),confirmedAt:new Date().toISOString()});alert(tr('timezoneConfirmed'));await render()};const addTime=document.getElementById('add-time');if(addTime){addTime.onclick=()=>{const wrap=document.getElementById('time-list'),row=document.createElement('div');row.className='time-row';row.innerHTML='<input class="form-input med-time" type="time" value="12:00"><button type="button" class="time-remove">−</button>';wrap.appendChild(row);bindTimeRows()};bindTimeRows()}const add=document.getElementById('add-med');if(add)add.onclick=addMed;const imp=document.getElementById('import-btn');if(imp)imp.onclick=async()=>{const f=document.getElementById('backup-file')?.files?.[0];if(!f)return alert(tr('chooseFile'));try{await importBackup(f);alert(tr('importOk'))}catch(e){alert(tr('importFail',{err:e.message}))}};const exp=document.getElementById('export-btn');if(exp)exp.onclick=exportBackup;const rb=document.getElementById('report-btn');if(rb)rb.onclick=()=>showMedicationReport(7);const sh=document.getElementById('share-btn');if(sh)sh.onclick=shareSummary;const pr=document.getElementById('print-btn');if(pr)pr.onclick=()=>window.print()}
+function reportTierLabel(e){
+  if(!e||e.type!=='taken')return tr('open');
+  if(e.tier==='red')return tr('late45');
+  if(e.tier==='yellow')return tr('late30');
+  if(e.tier==='unrated')return tr('backfilled');
+  return tr('punctual');
+}
+function reportWorstTier(a,b){
+  const rank={open:5,red:4,yellow:3,unrated:2,green:1};
+  return (rank[b]||0)>(rank[a]||0)?b:a;
+}
+// Single Source of Truth for report data: preview and print/PDF consume this same model.
+async function buildMedicationReport(daysCount=7){
+  const meds=await all('meds'),map=await latestEvents(),days=pastDays(daysCount);
+  const stats={due:0,done:0,green:0,yellow:0,red:0,unrated:0,open:0};
+  const medicationRows=[];
+  const dayRows=[];
+  for(const m of meds){
+    const relevant=days.filter(d=>timesForDate(m,d).length);
+    if(!relevant.length)continue;
+    const allTimes=normalizeTimes(relevant.flatMap(d=>timesForDate(m,d)));
+    medicationRows.push({
+      name:m.name,dose:m.dose||'',instructions:m.doctorInstructions||'',expiryDate:m.expiryDate||'',times:allTimes
+    });
+  }
+  for(const d of days){
+    for(const m of meds){
+      for(const time of timesForDate(m,d)){
+        stats.due++;
+        const e=map[slotKey(m.id,d,time)];
+        let tier='open';
+        if(e&&e.type==='taken'){
+          stats.done++;
+          tier=e.tier==='red'?'red':e.tier==='yellow'?'yellow':e.tier==='unrated'?'unrated':'green';
+          stats[tier]++;
+        }else stats.open++;
+        dayRows.push({date:d,name:m.name,dose:m.dose||'',time,tier,label:reportTierLabel(e)});
+      }
+    }
+  }
+  stats.pct=stats.due?Math.round(stats.done/stats.due*100):0;
+  return{daysCount,start:days[0],end:days[days.length-1],stats,medicationRows,dayRows};
+}
+function ensureReportStyles(){
+  if(document.getElementById('pp-report-styles'))return;
+  const s=document.createElement('style');s.id='pp-report-styles';s.textContent=`
+    .pp-report-controls{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:14px 0}
+    .pp-report-sheet{background:#fff;color:#171411;border:1px solid #d7cec3;border-radius:18px;padding:20px;margin-top:14px}
+    .pp-report-title{font-size:24px;font-weight:900;line-height:1.15;margin-bottom:4px}
+    .pp-report-meta{font-size:12px;color:#5d554e;margin-bottom:16px}
+    .pp-report-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 18px}
+    .pp-report-kpi{background:#f2ede6;border:1px solid #d7cec3;border-radius:12px;padding:10px}.pp-report-kpi b{display:block;font-size:20px}.pp-report-kpi span{font-size:10px;color:#5d554e}
+    .pp-report-h{font-size:14px;font-weight:900;margin:18px 0 8px}
+    .pp-report-med{padding:9px 0;border-bottom:1px solid #e5ded5;font-size:12px}.pp-report-med b{font-size:13px}
+    .pp-report-table{width:100%;border-collapse:collapse;font-size:10px}.pp-report-table th,.pp-report-table td{padding:7px 5px;border-bottom:1px solid #e7e0d8;text-align:left;vertical-align:top}.pp-report-table th{font-weight:900}
+    .pp-report-status{font-weight:800}.pp-report-status.green{color:#1f7069}.pp-report-status.yellow{color:#7b5c16}.pp-report-status.red{color:#9f3025}.pp-report-status.unrated{color:#5d554e}.pp-report-status.open{color:#5d554e}
+    .pp-report-disclaimer{margin-top:18px;padding-top:12px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
+    .pp-report-print-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    @media print{
+      body *{visibility:hidden!important}
+      #pp-modal,#pp-modal .pp-report-sheet,#pp-modal .pp-report-sheet *{visibility:visible!important}
+      #pp-modal{position:absolute!important;inset:0!important;background:#fff!important;padding:0!important;display:block!important}
+      #pp-modal .pp-modal-card{width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+      #pp-modal .pp-modal-head,#pp-modal .pp-report-controls,#pp-modal .pp-report-print-actions{display:none!important}
+      #pp-modal .pp-report-sheet{border:0!important;border-radius:0!important;padding:14mm!important;margin:0!important}
+      .pp-report-table{font-size:9pt}.pp-report-disclaimer{font-size:8.5pt}
+    }`;document.head.appendChild(s);
+}
+function reportDate(ds){return fmtDate(ds,{day:'2-digit',month:'2-digit',year:'numeric'})}
+// Single renderer for the medication report. Output channels must not implement their own report logic.
+function reportHTML(r){
+  const meds=r.medicationRows.length?r.medicationRows.map(m=>`<div class="pp-report-med"><b>${esc(m.name)}${m.dose?' · '+esc(m.dose):''}</b><div>${tr('reportTimes')}: ${esc(m.times.join(' · '))}</div>${m.instructions?`<div>${esc(m.instructions)}</div>`:''}${m.expiryDate?`<div>${tr('expiry')}: ${esc(reportDate(m.expiryDate))}</div>`:''}</div>`).join(''):`<div class="pp-report-med">${tr('reportNoData')}</div>`;
+  const rows=r.dayRows.map(x=>`<tr><td>${esc(reportDate(x.date))}</td><td>${esc(x.name)}${x.dose?' '+esc(x.dose):''}</td><td>${esc(x.time)}</td><td><span class="pp-report-status ${esc(x.tier)}">${esc(x.label)}</span></td></tr>`).join('');
+  return `<section class="pp-report-sheet" id="pp-report-sheet"><div class="pp-report-title">${tr('reportTitle')}</div><div class="pp-report-meta">${tr('reportCreated')}: ${esc(reportDate(today()))} · ${esc(reportDate(r.start))} – ${esc(reportDate(r.end))} · ${esc(planTimeZone())}</div><div class="pp-report-kpis"><div class="pp-report-kpi"><b>${r.stats.due}</b><span>${tr('reportPlanned')}</span></div><div class="pp-report-kpi"><b>${r.stats.done}</b><span>${tr('reportDocumented')}</span></div><div class="pp-report-kpi"><b>${r.stats.pct}%</b><span>${tr('reportRate')}</span></div></div><div class="pp-report-h">${tr('reportMedicationList')}</div>${meds}<div class="pp-report-h">${tr('reportDaily')}</div>${rows?`<table class="pp-report-table"><thead><tr><th>Datum</th><th>${tr('medication')}</th><th>${tr('intakeTime')}</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="pp-report-med">${tr('reportNoData')}</div>`}<div class="pp-report-disclaimer"><b>PillPlan</b> · ${esc(tr('reportLocal'))}<br><br>${esc(tr('reportSaveHint'))}<br><br>${esc(tr('reportDisclaimer'))}</div></section>`;
+}
+
+
+
+function openPrintableReport(r){
+  const w=window.open('','_blank');
+  if(!w){
+    alert('Druckansicht konnte nicht geöffnet werden. Bitte Pop-ups für diese Seite erlauben.');
+    return;
+  }
+  const html=reportHTML(r);
+  w.document.open();
+  w.document.write(`<!doctype html>
+<html lang="${esc(lang)}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PillPlan Medikamentenbericht</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#fff;color:#171411}
+.wrap{max-width:820px;margin:0 auto;padding:22px}
+.help{background:#eef7f5;border:1px solid #b9d8d3;border-radius:14px;padding:12px 14px;margin-bottom:18px;font-size:14px;line-height:1.4}
+.pp-report-sheet{background:#fff;color:#171411;padding:0}
+.pp-report-title{font-size:26px;font-weight:900;line-height:1.15;margin-bottom:4px}
+.pp-report-meta{font-size:12px;color:#5d554e;margin-bottom:16px}
+.pp-report-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 18px}
+.pp-report-kpi{background:#f2ede6;border:1px solid #d7cec3;border-radius:12px;padding:10px}
+.pp-report-kpi b{display:block;font-size:20px}.pp-report-kpi span{font-size:10px;color:#5d554e}
+.pp-report-h{font-size:14px;font-weight:900;margin:18px 0 8px}
+.pp-report-med{padding:9px 0;border-bottom:1px solid #e5ded5;font-size:12px}.pp-report-med b{font-size:13px}
+.pp-report-table{width:100%;border-collapse:collapse;font-size:10px}
+.pp-report-table th,.pp-report-table td{padding:7px 5px;border-bottom:1px solid #e7e0d8;text-align:left;vertical-align:top}
+.pp-report-table th{font-weight:900}
+.pp-report-status{font-weight:800}.pp-report-status.green{color:#1f7069}.pp-report-status.yellow{color:#7b5c16}.pp-report-status.red{color:#9f3025}.pp-report-status.unrated,.pp-report-status.open{color:#5d554e}
+.pp-report-disclaimer{margin-top:18px;padding-top:12px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
+@media print{
+  .help{display:none!important}
+  .wrap{max-width:none;padding:12mm}
+  .pp-report-table{font-size:9pt}
+  .pp-report-disclaimer{font-size:8.5pt}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="help"><b>iPhone:</b> Unten auf das Teilen-Symbol tippen → <b>Drucken</b>. In der Druckvorschau kann der Bericht anschließend gedruckt oder als PDF weitergegeben/gesichert werden.</div>
+${html}
+</div>
+</body>
+</html>`);
+  w.document.close();
+  w.focus();
+}
+
+async function showMedicationReport(daysCount=7){
+  ensureReportStyles();
+  const r=await buildMedicationReport(daysCount);
+  modal(`<div class="pp-modal-head"><div><div class="form-title">${tr('report')}</div><div class="pp-modal-sub">${tr('reportSub')}</div></div><button class="pp-close" id="pp-report-close">×</button></div><div class="pp-report-controls"><label><span class="form-label">${tr('reportPeriod')}</span><select id="pp-report-period" class="form-input"><option value="7" ${daysCount===7?'selected':''}>${tr('week1')}</option><option value="14" ${daysCount===14?'selected':''}>${tr('week2')}</option><option value="21" ${daysCount===21?'selected':''}>${tr('week3')}</option><option value="30" ${daysCount===30?'selected':''}>${tr('month1')}</option></select></label><button class="secondary-action" id="pp-report-refresh">${tr('reportPreview')}</button></div>${reportHTML(r)}<div class="pp-report-print-actions"><button class="secondary-action" id="pp-report-cancel">${tr('reportClose')}</button><button class="primary-action" id="pp-report-print">${tr('reportPrint')}</button></div>`);
+  document.getElementById('pp-report-close').onclick=modalClose;
+  document.getElementById('pp-report-cancel').onclick=modalClose;
+  document.getElementById('pp-report-refresh').onclick=()=>showMedicationReport(Number(document.getElementById('pp-report-period').value)||7);
+  document.getElementById('pp-report-period').onchange=e=>showMedicationReport(Number(e.target.value)||7);
+  document.getElementById('pp-report-print').onclick=()=>openPrintableReport(r);
+}
+
 async function selfCheck(){for(const s of ['meds','events','meta'])if(!db.objectStoreNames.contains(s))throw new Error('Missing data store: '+s);await all('meds');await all('events');return true}
 applyLang();openDB().then(selfCheck).then(render).catch(e=>{document.getElementById('app').innerHTML=`<div class="fatal-card"><strong>${tr('fatal')}</strong><div>${esc(e?.message||e)}</div></div>`});
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/pillplan-next/sw.js',{scope:'/pillplan-next/'}).catch(()=>{}));
