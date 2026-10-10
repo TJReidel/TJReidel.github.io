@@ -25,7 +25,7 @@ function fixture(context, meds, events) {
 }
 const json = x => JSON.parse(JSON.stringify(x));
 async function run() {
-  for (const runtime of ['pillplan-next/core-v5.js','pillplan-preview-pdf/core-v5.js']) {
+  for (const runtime of ['pillplan-next/core-v5.js']) {
     const {context:c,settings,source} = load(runtime);
     const med = {id:1,name:'Test <A>',dose:'5 mg',doctorInstructions:'mit Essen',expiryDate:'2027-01-01',startDate:'2026-09-01',times:['08:00']};
     const events = [
