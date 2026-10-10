@@ -17,5 +17,8 @@ jobs:
           node-version: '22'
       - name: Runtime syntax
         run: node --check pillplan-next/core-v5.js
+      - name: Backup import regression
+        run: node pillplan-next/backup-import.tests.cjs
       - name: Medication report regression
         run: node pillplan-next/medication-report.tests.cjs
+
