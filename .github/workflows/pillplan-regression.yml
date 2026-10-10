@@ -1,0 +1,21 @@
+name: PillPlan regression
+on:
+  pull_request:
+    paths:
+      - 'pillplan-next/**'
+      - '.github/workflows/pillplan-regression.yml'
+  workflow_dispatch:
+jobs:
+  report-regression:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Runtime syntax
+        run: node --check pillplan-next/core-v5.js
+      - name: Medication report regression
+        run: node pillplan-next/medication-report.tests.cjs
