@@ -69,6 +69,9 @@ test('release update: production baseline to candidate, same origin, offline and
   await expect(page.locator('#notify-btn')).toHaveCount(0);
   const newBackup=await exportBackup();
   for(const s of ['meds','events','meta'])expect(newBackup[s]).toEqual(oldBackup[s]);
+  await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill('FICTIONAL_TEMPORARY_RECORD');await page.locator('#add-med').click();
+  expect((await snapshot()).meds.length).toBe(before.meds.length+1);
+  await page.locator('[data-v="settings"]').click();
   await page.locator('#backup-file').setInputFiles({name:'fictional-old-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(oldBackup))});
   await page.locator('#import-btn').click();expect(await snapshot()).toEqual(before);
   await page.locator('#backup-file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{invalid')});
