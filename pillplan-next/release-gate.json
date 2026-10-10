@@ -1,0 +1,29 @@
+{
+  "productionBaseline": "a4ad82dc21daa1d4848f0aa670b5fcc8f15a3f54",
+  "runtimeReference": "6707ccd8d62b41b4d50186de7407f7aefa027e6d",
+  "protectedOrigin": "https://pillplan-iphone-test-16f3e292.thomasreidel.chatgpt.site",
+  "protectedSiteId": "appgprj_6aca5db52df48191adcb562e47c8e144",
+  "deviceEvidence": [
+    {
+      "commit": "91171aa18a8b6b932a28d367a72d91a2edd4b8f0",
+      "confirmedOn": "2026-10-10",
+      "source": "User: Hat alles perfekt funktioniert, after the iPhone acceptance checklist",
+      "checks": ["report/PDF", "backup roundtrip", "offline write/restart/persistence"],
+      "status": "PASS"
+    },
+    {
+      "commit": null,
+      "reportedRuntimeReference": "6707ccd8d62b41b4d50186de7407f7aefa027e6d",
+      "confirmedOn": "2026-10-10",
+      "source": "User: Ist alles drin-keine Fehler. Personal data transfer confirmed; installed commit not independently observed on device.",
+      "checks": ["personal data transfer"],
+      "status": "PASS"
+    }
+  ],
+  "privacy": "BLOCKED",
+  "blockers": ["Confirm operator identity and public contact details", "Confirm launch scope and production hosting; complete hosting roles, legal basis, retention and transfer information", "Complete and review operator privacy notice and applicable provider information"],
+  "publication": "HOLD",
+  "recordatiCompleted": false,
+  "approvedCommit": null,
+  "nextAction": "Confirm operator, public address, public email, intended audience/commercial use and GitHub Pages hosting in one reply."
+}

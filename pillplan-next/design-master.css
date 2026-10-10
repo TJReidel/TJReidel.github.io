@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--cream:#f7f4ef;--cream2:#f0ebe2;--ink:#1a1612;--ink2:#4a4540;--ink3:#8a8480;--teal:#2a7c74;--teal2:#3a9e94;--teal-bg:#e8f4f3;--red:#c0392b;--red-bg:#fdf0ee;--gold:#b08d57;--gold-bg:#fdf8f0;--yellow:#d7b46a;--neutral:#ece9e4;--r:18px;--r2:24px;--shadow:0 2px 16px rgba(26,22,18,.08)}
 html{font-size:17px;background:var(--cream)}body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--teal);outline-offset:2px}

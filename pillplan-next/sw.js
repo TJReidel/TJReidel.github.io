@@ -1,5 +1,5 @@
-const CACHE='pillplan-next-v25-stable1';
-const PREVIOUS_CACHE='pillplan-next-v24-single-runtime';
+const CACHE='pillplan-next-v29-privacy-closure';
+const PREVIOUS_CACHE='pillplan-next-v27-report-closure';
 const SHELL='/pillplan-next/index.html';
 const ASSETS=[
   '/pillplan-next/',
