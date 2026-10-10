@@ -22,3 +22,21 @@ jobs:
       - name: Medication report regression
         run: node pillplan-next/medication-report.tests.cjs
 
+
+  browser-e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save @playwright/test
+          npx playwright install --with-deps chromium
+      - name: Run isolated browser E2E
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 &
+          npx playwright test pillplan-next/browser-regression.spec.cjs --reporter=line --workers=1
