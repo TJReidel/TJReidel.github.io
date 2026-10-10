@@ -191,7 +191,7 @@ test('privacy closure: no app speech capture or automatic medication transfer, d
  await page.locator('#pp-data-notice summary').click();
  await expect(page.locator('#pp-data-notice')).toContainText(/keine eigene Spracherkennung|does not use its own speech recognition/);
  expect(await page.evaluate(()=>window.__speechCalls)).toBe(0);
- expect(requests.every(r=>r.method==='GET'&&new URL(r.url).origin==='http://127.0.0.1:8765'&&!r.body&&!r.url.includes('FICTIONAL_PRIVACY_CANARY'))).toBeTruthy();
+ expect(requests.filter(r=>r.method!=='GET'||new URL(r.url).origin!=='http://127.0.0.1:8765'||r.body||r.url.includes('FICTIONAL_PRIVACY_CANARY'))).toEqual([]);
  expect(errors).toEqual([]);
  await context.setOffline(false);
 });

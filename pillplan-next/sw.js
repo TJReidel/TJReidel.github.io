@@ -1,4 +1,4 @@
-const CACHE='pillplan-next-v28-privacy-closure';
+const CACHE='pillplan-next-v29-privacy-closure';
 const PREVIOUS_CACHE='pillplan-next-v27-report-closure';
 const SHELL='/pillplan-next/index.html';
 const ASSETS=[

@@ -22,6 +22,8 @@ Patientengeführte persönliche Medikationsdokumentation, keine Erinnerung, Ther
 | Spracherkennung der App | Entfernt: kein SpeechRecognition-Aufruf, kein Mikrofonknopf | Keine |
 | Betriebssystem-/Tastaturdiktat | Außerhalb der PillPlan-Spracherkennung; Anbieter-/Geräteeinstellungen maßgeblich | Freiwillige Gerätefunktion |
 
+Externe Google-Fonts-CSS-Anfrage im Netzwerktest entdeckt und entfernt. Die vorhandenen Systemschrift-Fallbacks werden genutzt; keine neuen Schriftdateien oder Abhängigkeiten.
+
 Keine App-Analytics, Trackingbibliothek, App-Cookies oder API zum Upload von Medikationsdaten in der geprüften Runtime. Laufzeitnachweis über isolierten Browser-Test ergänzt; Codeprüfung allein gilt nicht als PASS. Website-Daten können vom Nutzer gelöscht werden; separat exportierte Dateien müssen separat gelöscht werden. Browserbereinigung und Geräteschäden können Daten verlieren lassen. Kein Betreiberzugriff zur Wiederherstellung lokaler Daten.
 
 ## Spracherkennung: Ursache und Korrektur
