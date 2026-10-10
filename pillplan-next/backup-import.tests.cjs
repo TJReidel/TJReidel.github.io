@@ -16,7 +16,8 @@ for(const corrupt of [
 ])assert.throws(()=>prepare(corrupt));
 let stores={meds:[{id:999,name:'EXISTING'}],events:[],meta:[]};
 let transactions=0;
-ctx.db={transaction(names,mode){assert.equal(mode,'readwrite');transactions++;const before=structuredClone(stores),next=structuredClone(stores);const t={objectStore(n){return{clear(){next[n]=[]},put(item){next[n].push(item)}}}};queueMicrotask(()=>{stores=next;t.oncomplete?.()});return t}};
+ctx.fakeDB={transaction(names,mode){assert.equal(mode,'readwrite');transactions++;const before=structuredClone(stores),next=structuredClone(stores);const t={objectStore(n){return{clear(){next[n]=[]},put(item){next[n].push(item)}}}};queueMicrotask(()=>{stores=next;t.oncomplete?.()});return t}};
+vm.runInContext('db=fakeDB',ctx);
 ctx.fakeFile={text:async()=>JSON.stringify(valid)};
 ctx.applyLang=()=>{};ctx.render=async()=>{};
 (async()=>{
