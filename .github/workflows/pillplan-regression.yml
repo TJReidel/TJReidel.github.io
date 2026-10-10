@@ -35,8 +35,16 @@ jobs:
       - name: Install Playwright browser
         run: |
           npm install --no-save @playwright/test
+          pip install pypdf
           npx playwright install --with-deps chromium
       - name: Run isolated browser E2E
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 &
           npx playwright test pillplan-next/browser-regression.spec.cjs --reporter=line --workers=1
+
+      - name: Preserve browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pillplan-browser-evidence
+          path: test-results/

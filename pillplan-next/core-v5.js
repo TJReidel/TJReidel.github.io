@@ -22,8 +22,8 @@ let lang=detectLang(),db,view='today',period=7;
 function tr(k,v={}){let s=(TX[lang]&&TX[lang][k])||TX.en[k]||k;for(const [a,b] of Object.entries(v))s=s.replaceAll(`{${a}}`,String(b));return s}
 function applyLang(){const cfg=LANGS[lang]||LANGS.de;document.documentElement.lang=lang;document.documentElement.dir=cfg.dir;document.title=`PillPlan v${APP_VERSION}`}
 function fmtDate(ds=today(),opts={weekday:'long',day:'numeric',month:'long'}){return new Date(ds+'T12:00:00').toLocaleDateString(LANGS[lang].locale,opts)}
-Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Eigene Medikamente und Einnahmen im Überblick',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht erstellen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'Drucken / PDF',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.',reportSaveHint:'Drucken / PDF öffnet die druckoptimierte Ansicht desselben Berichts. Auf dem iPhone dort über Teilen → Drucken; anschließend kann der Bericht gedruckt oder als PDF gesichert bzw. geteilt werden.'});
-Object.assign(TX.en,{report:'Medication report',reportSub:'Your medications and intake history at a glance',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'Create report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'Print / PDF',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.',reportSaveHint:'Print / PDF opens the print-optimised view of this same report. On iPhone use Share → Print there; the report can then be printed or saved/shared as a PDF.'});
+Object.assign(TX.de,{report:'Medikamentenbericht',reportSub:'Eigene Medikamente und Einnahmen im Überblick',reportTitle:'PillPlan – Medikamenten- & Einnahmebericht',reportCreate:'Bericht ansehen',reportPeriod:'Zeitraum',reportPreview:'Vorschau',reportPrint:'Drucken / PDF speichern',reportClose:'Schließen',reportCreated:'Erstellt',reportPlanned:'Geplante Einnahmen',reportDocumented:'Dokumentiert',reportRate:'Dokumentationsquote',reportMedicationList:'Medikamente im Zeitraum',reportDaily:'Einnahmedokumentation',reportNoData:'Für diesen Zeitraum liegen keine geplanten Einnahmen vor.',reportTimes:'Einnahmezeiten',reportDisclaimer:'Dieser Bericht dokumentiert die in PillPlan erfassten Angaben und Einnahmen. Er ersetzt keine ärztliche oder pharmazeutische Beratung. Änderungen an Medikamenten, Dosierung oder Einnahme bitte mit Arzt/Ärztin oder Apotheke abstimmen.',reportLocal:'Lokal auf diesem Gerät erstellt. Keine automatische Datenübertragung.',reportSaveHint:'Zum Speichern als PDF im iOS-Druckdialog die Seitenvorschau öffnen und über Teilen in Dateien sichern.'});
+Object.assign(TX.en,{report:'Medication report',reportSub:'Your medications and intake history at a glance',reportTitle:'PillPlan – Medication & Intake Report',reportCreate:'View report',reportPeriod:'Period',reportPreview:'Preview',reportPrint:'Print / save PDF',reportClose:'Close',reportCreated:'Created',reportPlanned:'Scheduled intakes',reportDocumented:'Documented',reportRate:'Documentation rate',reportMedicationList:'Medications in period',reportDaily:'Intake documentation',reportNoData:'No scheduled intakes were found for this period.',reportTimes:'Intake times',reportDisclaimer:'This report documents information and intakes recorded in PillPlan. It does not replace medical or pharmaceutical advice. Discuss changes to medication, dose or intake with your doctor or pharmacist.',reportLocal:'Created locally on this device. No automatic data transfer.',reportSaveHint:'To save a PDF in the iOS print dialog, open the page preview and use Share to save to Files.'});
 
 function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('meds'))d.createObjectStore('meds',{keyPath:'id'});if(!d.objectStoreNames.contains('events')){const s=d.createObjectStore('events',{keyPath:'eventId'});s.createIndex('slot','slot',{unique:false});s.createIndex('createdAt','createdAt',{unique:false})}if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta',{keyPath:'key'})};r.onsuccess=()=>{db=r.result;resolve(db)};r.onerror=()=>reject(r.error)})}
 function tx(s,m='readonly'){return db.transaction(s,m).objectStore(s)}
@@ -165,7 +165,7 @@ async function buildMedicationReport(daysCount=7){
 function ensureReportStyles(){
   if(document.getElementById('pp-report-styles'))return;
   const s=document.createElement('style');s.id='pp-report-styles';s.textContent=`
-    .pp-report-controls{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:14px 0}
+    .pp-report-controls{display:grid;grid-template-columns:1fr;gap:10px;align-items:end;margin:14px 0}
     .pp-report-sheet{background:#fff;color:#171411;border:1px solid #d7cec3;border-radius:18px;padding:20px;margin-top:14px}
     .pp-report-title{font-size:24px;font-weight:900;line-height:1.15;margin-bottom:4px}
     .pp-report-meta{font-size:12px;color:#5d554e;margin-bottom:16px}
@@ -175,7 +175,7 @@ function ensureReportStyles(){
     .pp-report-med{padding:9px 0;border-bottom:1px solid #e5ded5;font-size:12px}.pp-report-med b{font-size:13px}
     .pp-report-table{width:100%;border-collapse:collapse;font-size:10px}.pp-report-table th,.pp-report-table td{padding:7px 5px;border-bottom:1px solid #e7e0d8;text-align:left;vertical-align:top}.pp-report-table th{font-weight:900}
     .pp-report-status{font-weight:800}.pp-report-status.green{color:#1f7069}.pp-report-status.yellow{color:#7b5c16}.pp-report-status.red{color:#9f3025}.pp-report-status.unrated{color:#5d554e}.pp-report-status.open{color:#5d554e}
-    .pp-report-disclaimer{margin-top:18px;padding-top:12px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
+    .pp-report-disclaimer{margin-top:12px;padding-top:8px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
     .pp-report-print-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
     @media print{
       body *{visibility:hidden!important}
@@ -216,7 +216,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;ma
 .wrap{max-width:820px;margin:0 auto;padding:22px}
 .help{background:#eef7f5;border:1px solid #b9d8d3;border-radius:14px;padding:12px 14px;margin-bottom:18px;font-size:14px;line-height:1.4}
 .pp-report-sheet{background:#fff;color:#171411;padding:0}
-.pp-report-title{font-size:26px;font-weight:900;line-height:1.15;margin-bottom:4px}
+.pp-report-title{font-size:22px;font-weight:900;line-height:1.15;margin-bottom:4px}
 .pp-report-meta{font-size:12px;color:#5d554e;margin-bottom:16px}
 .pp-report-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 18px}
 .pp-report-kpi{background:#f2ede6;border:1px solid #d7cec3;border-radius:12px;padding:10px}
@@ -227,10 +227,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;ma
 .pp-report-table th,.pp-report-table td{padding:7px 5px;border-bottom:1px solid #e7e0d8;text-align:left;vertical-align:top}
 .pp-report-table th{font-weight:900}
 .pp-report-status{font-weight:800}.pp-report-status.green{color:#1f7069}.pp-report-status.yellow{color:#7b5c16}.pp-report-status.red{color:#9f3025}.pp-report-status.unrated,.pp-report-status.open{color:#5d554e}
-.pp-report-disclaimer{margin-top:18px;padding-top:12px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
+.pp-report-disclaimer{margin-top:12px;padding-top:8px;border-top:1px solid #d7cec3;font-size:9.5px;line-height:1.45;color:#4e4741}
 @media print{
   .help{display:none!important}
-  .wrap{max-width:none;padding:12mm}
+  @page{size:A4;margin:12mm}
+  html,body{margin:0!important;padding:0!important}
+  .wrap{max-width:none;padding:0}
+  .pp-report-sheet{margin:0;padding:0}
+  tr,.pp-report-med,.pp-report-kpi{break-inside:avoid}
+  thead{display:table-header-group}
+  .pp-report-h{break-after:avoid}
+  .pp-report-disclaimer{margin-top:10px;padding-top:8px}
   .pp-report-table{font-size:9pt}
   .pp-report-disclaimer{font-size:8.5pt}
 }
@@ -238,7 +245,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;ma
 </head>
 <body>
 <div class="wrap">
-<div class="help"><b>iPhone:</b> Unten auf das Teilen-Symbol tippen → <b>Drucken</b>. In der Druckvorschau kann der Bericht anschließend gedruckt oder als PDF weitergegeben/gesichert werden.</div>
+<div class="help"><button id="print-report" type="button" onclick="window.print()">${esc(tr('reportPrint'))}</button><p>${esc(tr('reportSaveHint'))}</p><p>Falls der Druckdialog nicht öffnet: im Browser Teilen → Drucken wählen.</p></div>
 ${html}
 </div>
 </body>
@@ -250,10 +257,9 @@ ${html}
 async function showMedicationReport(daysCount=7){
   ensureReportStyles();
   const r=await buildMedicationReport(daysCount);
-  modal(`<div class="pp-modal-head"><div><div class="form-title">${tr('report')}</div><div class="pp-modal-sub">${tr('reportSub')}</div></div><button class="pp-close" id="pp-report-close">×</button></div><div class="pp-report-controls"><label><span class="form-label">${tr('reportPeriod')}</span><select id="pp-report-period" class="form-input"><option value="7" ${daysCount===7?'selected':''}>${tr('week1')}</option><option value="14" ${daysCount===14?'selected':''}>${tr('week2')}</option><option value="21" ${daysCount===21?'selected':''}>${tr('week3')}</option><option value="30" ${daysCount===30?'selected':''}>${tr('month1')}</option></select></label><button class="secondary-action" id="pp-report-refresh">${tr('reportPreview')}</button></div>${reportHTML(r)}<div class="pp-report-print-actions"><button class="secondary-action" id="pp-report-cancel">${tr('reportClose')}</button><button class="primary-action" id="pp-report-print">${tr('reportPrint')}</button></div>`);
+  modal(`<div class="pp-modal-head"><div><div class="form-title">${tr('report')}</div><div class="pp-modal-sub">${tr('reportSub')}</div></div><button class="pp-close" id="pp-report-close">×</button></div><div class="pp-report-controls"><label><span class="form-label">${tr('reportPeriod')}</span><select id="pp-report-period" class="form-input"><option value="7" ${daysCount===7?'selected':''}>${tr('week1')}</option><option value="14" ${daysCount===14?'selected':''}>${tr('week2')}</option><option value="21" ${daysCount===21?'selected':''}>${tr('week3')}</option><option value="30" ${daysCount===30?'selected':''}>${tr('month1')}</option></select></label></div>${reportHTML(r)}<div class="pp-report-print-actions"><button class="secondary-action" id="pp-report-cancel">${tr('reportClose')}</button><button class="primary-action" id="pp-report-print">${tr('reportPrint')}</button></div>`);
   document.getElementById('pp-report-close').onclick=modalClose;
   document.getElementById('pp-report-cancel').onclick=modalClose;
-  document.getElementById('pp-report-refresh').onclick=()=>showMedicationReport(Number(document.getElementById('pp-report-period').value)||7);
   document.getElementById('pp-report-period').onchange=e=>showMedicationReport(Number(e.target.value)||7);
   document.getElementById('pp-report-print').onclick=()=>openPrintableReport(r);
 }

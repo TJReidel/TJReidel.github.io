@@ -90,3 +90,69 @@ test('extended browser: edit, valid backup roundtrip, report print and end',asyn
  return rows.some(m=>m.name==='QA Roundtrip Edited'&&Boolean(m.endDate));
  })).toBeTruthy();
 });
+
+test('closure: report periods, exact print content, short and long PDF pagination, duplicate integrity',async({page},testInfo)=>{
+ const fs=require('node:fs'),{execFileSync}=require('node:child_process');
+ page.on('dialog',d=>d.accept());
+ await page.goto('http://127.0.0.1:8765/pillplan-next/');
+ await page.locator('[data-v="add"]').click();
+ await page.locator('#med-name').fill('QA No Dose');
+ await page.locator('#add-med').click();
+ await expect(page.locator('.dose-name')).toHaveText('QA No Dose');
+ await page.locator('[data-toggle]').click();
+ await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
+ await page.locator('[data-v="settings"]').click();
+ await expect(page.locator('#notify-btn')).toHaveCount(0);
+ await expect(page.locator('body')).not.toContainText(/PillPlan reminds|PillPlan erinnert|Test notification|Benachrichtigung testen/);
+ const downloadWait=page.waitForEvent('download');await page.locator('#export-btn').click();
+ const download=await downloadWait;const backup=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
+ expect(backup.meds[0].dose).toBe('');
+ await page.locator('#backup-file').setInputFiles({name:'duplicate.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...backup,meds:[backup.meds[0],backup.meds[0]]}))});
+ await page.locator('#import-btn').click();
+ const secondWait=page.waitForEvent('download');await page.locator('#export-btn').click();const second=await secondWait;const after=JSON.parse(fs.readFileSync(await second.path(),'utf8'));
+ expect(after.meds).toEqual(backup.meds);expect(after.events).toEqual(backup.events);expect(after.meta).toEqual(backup.meta);
+ await page.locator('#report-btn').click();
+ await expect(page.locator('#pp-report-refresh')).toHaveCount(0);
+ for(const days of ['7','14','30']){
+  await page.locator('#pp-report-period').selectOption(days);
+  await expect(page.locator('#pp-report-period')).toHaveValue(days);
+  await expect(page.locator('#pp-report-sheet')).toContainText('QA No Dose');
+  await expect(page.locator('#pp-report-sheet')).not.toContainText('5 mg');
+ }
+ async function verifyPdf(name,expectedPages){
+  const preview=await page.locator('#pp-report-sheet').innerText();
+  const popupWait=page.waitForEvent('popup');await page.locator('#pp-report-print').click();const popup=await popupWait;
+  await popup.waitForLoadState('domcontentloaded');
+  expect(await popup.locator('#pp-report-sheet').innerText()).toBe(preview);
+  await expect(popup.locator('#print-report')).toBeVisible();
+  await popup.evaluate(()=>{window.print=()=>{window.__printCalled=true}});
+  await popup.locator('#print-report').click();expect(await popup.evaluate(()=>window.__printCalled)).toBe(true);
+  const path=testInfo.outputPath(name+'.pdf');await popup.pdf({path,format:'A4',preferCSSPageSize:true});
+  const info=JSON.parse(execFileSync('python3',['-c',"from pypdf import PdfReader;import json,sys;r=PdfReader(sys.argv[1]);print(json.dumps({'pages':len(r.pages),'text':'\\n'.join(p.extract_text() for p in r.pages)}))",path],{encoding:'utf8'}));
+  if(expectedPages===1)expect(info.pages).toBe(1);else expect(info.pages).toBeGreaterThan(1);
+  expect(info.text).toContain('QA No Dose');expect(info.text).not.toContain('5 mg');
+  if(expectedPages!==1)expect(info.text).toContain('QA Long 11');
+  await testInfo.attach(name,{path,contentType:'application/pdf'});await popup.close();
+ }
+ await verifyPdf('short-report',1);
+ await page.locator('#pp-report-close').click();
+ const start=new Date();start.setDate(start.getDate()-29);const ds=start.toLocaleDateString('en-CA');
+ const longBackup={...backup,meds:[backup.meds[0],...Array.from({length:12},(_,i)=>({id:9000+i,name:'QA Long '+i,dose:'',times:['08:00','20:00'],startDate:ds,scheduleHistory:[{from:ds,times:['08:00','20:00']}]}))]};
+ await page.locator('#backup-file').setInputFiles({name:'long.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(longBackup))});await page.locator('#import-btn').click();
+ await page.locator('#report-btn').click();await page.locator('#pp-report-period').selectOption('30');
+ await expect(page.locator('#pp-report-sheet tbody tr')).toHaveCount(721);
+ await verifyPdf('long-report',2);
+});
+
+test('closure: correction note, offline write and reopen',async({page,context})=>{
+ page.on('dialog',d=>d.accept());await page.goto('http://127.0.0.1:8765/pillplan-next/');
+ await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill('QA Offline');await page.locator('#add-med').click();
+ await page.locator('[data-toggle]').click();await page.locator('[data-v="plan"]').click();await page.locator('.day-cell.today').click();
+ await page.locator('#pp-corr-note').fill('QA correction');await page.locator('#pp-corr-save').click();await expect(page.locator('#pp-corr-save')).toHaveCount(0);
+ await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();await context.setOffline(true);await page.reload();
+ await page.locator('[data-toggle]').click();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
+ await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
+ const events=await page.evaluate(async()=>{const db=await new Promise(r=>{let q=indexedDB.open('pillplan-next-db');q.onsuccess=()=>r(q.result)});return new Promise(r=>{let q=db.transaction('events').objectStore('events').getAll();q.onsuccess=()=>r(q.result)})});
+ expect(events).toHaveLength(3);expect(events.some(e=>e.note==='QA correction'&&e.type==='undo')).toBe(true);
+ await context.setOffline(false);await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
+});
