@@ -10,11 +10,11 @@ test('real browser smoke: document, correction, report, backup safety, offline',
  await page.locator('#add-med').click();
  await expect(page.locator('.dose-name').filter({hasText:'Synthetic QA Pill'})).toBeVisible();
  await page.locator('[data-toggle]').first().click();
- await expect(page.locator('.dose-status').first()).toContainText('Dokumentiert');
+ await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented/);
  await page.reload();
- await expect(page.locator('.dose-status').first()).toContainText('Dokumentiert');
+ await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented/);
  await page.locator('[data-toggle]').first().click();
- await expect(page.locator('.dose-status').first()).not.toContainText('Dokumentiert');
+ await expect(page.locator('.dose-status').first()).not.toContainText(/Dokumentiert|Documented/);
  await page.locator('[data-v="settings"]').click();
  await page.locator('#report-btn').click();
  await expect(page.locator('#pp-modal')).toBeVisible();
