@@ -29,6 +29,8 @@ jobs:
         run: node --check pillplan-next/core-v5.js
       - name: Backup import regression
         run: node pillplan-next/backup-import.tests.cjs
+      - name: Documentation time semantics
+        run: node pillplan-next/documentation-time.tests.cjs
       - name: Medication report regression
         run: node pillplan-next/medication-report.tests.cjs
       - name: Release gate rejects failed and stale candidates
@@ -56,7 +58,7 @@ jobs:
       - name: Run isolated browser E2E
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 &
-          npx playwright test pillplan-next/browser-regression.spec.cjs --reporter=line --workers=1
+          npx playwright test pillplan-next/browser-regression.spec.cjs pillplan-next/documentation-time.spec.cjs --reporter=line --workers=1
       - name: Production-to-candidate update and rollback on isolated origin
         env:
           CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

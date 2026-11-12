@@ -1,5 +1,17 @@
 # PillPlan Release-Vorbereitung — HOLD
 
+## Isolierte Dokumentationskorrektur – 12.11.2026
+
+Nutzerfreigabe vom 12.11.2026 gilt für die isolierte Entwicklung von Option A: geplante Einnahme, freiwillig angegebene tatsächliche Einnahmezeit und Dokumentationszeit trennen, neutrale Statusangaben, einfaches Nachtragen und bestehende Regression. Keine Erinnerungen, neuen Dienste, Änderungen an main, Merge oder Veröffentlichung freigegeben. PR #19 und dessen Kandidat bleiben unverändert. Diese Entwicklung basiert auf `292121c005b3e2f2b595668bd33bbe5db8809b63` in einem separaten Branch; ein Draft-PR zeigt ausschließlich die zusätzlichen Änderungen gegen den Branch von #19.
+
+Runtime-Anzeige `1.3-dev`; IndexedDB-Schema bleibt 1. Neue Ereignisse verwenden `documentationVersion: 2`, eine transaktional zugeteilte Sequenz, Bezug zum Vorgänger, geplanten lokalen Zeitpunkt/Planversion/Zeitzone sowie getrennte tatsächliche und dokumentierte Zeitangaben. „Jetzt eingenommen“ ist eine Patientenangabe. Manuell nachgetragene lokale Zeiten haben absichtlich keinen erfundenen UTC-Zeitpunkt, insbesondere bei mehrdeutiger Sommerzeit. Unbekannte Zeit bleibt null. Bestehende Ereignisse werden nicht umgeschrieben und alte Farben werden nicht als tatsächliche Einnahmezeit interpretiert. Fehlende Bestätigung, ausdrücklich nicht eingenommen und unklare Einnahme sind unterschiedliche Zustände. Die Quote zählt bestätigte Einnahmen, nicht klinisch gemessene Adhärenz.
+
+Backupformat v7 enthält additive Ereignisfelder; bestehende Backups bleiben lesbar. Das vom Nutzer bereitgestellte Backup wurde ausschließlich lokal formatvalidiert; drei Medikamente, 193 Ereignisse und zwei Metaeinträge werden vom Parser unverändert übernommen. Keine persönlichen Datensätze, Sicherungsdateien oder Werte in Repository, CI oder Testhosting aufnehmen. Nutzer meldet die persönliche App am 12.11. als funktionsfähig; installierter Commit nicht unabhängig geprüft. Diese Rückmeldung ist keine Geräteabnahme der neuen Runtime.
+
+Vor Geräteprüfung: neue und bestehende Regression am exakten Entwicklungs-Commit erfolgreich; separate HTTPS-Origin nur mit synthetischen Daten und nach Prüfung der bestehenden Schutzregeln. Aktuell kein Deployment. Dann zwei fehlerfreie STABLE-Läufe am gleichen Kandidaten auf dem realen iPhone, zweiter zeitversetzt mit Neustart/Tageswechsel. Jede Runtime-Änderung setzt dieses Gate zurück. Datenschutz und ausdrückliche Releasefreigabe bleiben zusätzlich erforderlich.
+
+Ein Rückfall auf ältere Runtime-Versionen erhält Rohdaten, versteht aber neue Status-/Zeitsemantik nicht vollständig und kann bei zurückgestellter Geräteuhr Ereignisse anders sortieren. Ein solcher Rückfall ist deshalb keine freigegebene Wiederherstellungsstrategie für neue Einträge; Sicherung und geprüfte Vorwärtskorrektur vorziehen. Der bestehende Update-/Rollbacktest prüft Datenpersistenz, keine semantische Abnahme älterer Runtime-Versionen für neue Daten.
+
 Stand 10.10.2026. Führender Release-Status: JSON/Markdown-Artefakt und Job Summary des bestehenden Workflows `PillPlan regression`. Keine zweite Statusliste. `release-gate.json` enthält dauerhafte Grenzen und historische Nutzerbestätigungen; CI ergänzt ausschließlich tatsächlich ausgeführte technische Ergebnisse.
 
 ## Schutz der persönlichen Version
