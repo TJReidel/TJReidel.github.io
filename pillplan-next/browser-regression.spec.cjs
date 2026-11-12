@@ -13,7 +13,9 @@ test('real browser smoke: document, correction, report, backup safety, offline',
  await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented/);
  await page.reload();
  await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented/);
- await page.locator('[data-toggle]').first().click();
+ await page.locator('[data-earlier]').first().click();
+ await page.locator('#pp-more-details summary').click();
+ await page.locator('#pp-corr-undo').click();
  await expect(page.locator('.dose-status').first()).not.toContainText(/Dokumentiert|Documented/);
  await page.locator('[data-v="settings"]').click();
  await page.locator('#report-btn').click();
@@ -148,7 +150,7 @@ test('closure: correction note, offline write and reopen',async({page,context})=
  page.on('dialog',d=>d.accept());await page.goto('http://127.0.0.1:8765/pillplan-next/');
  await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill('QA Offline');await page.locator('#add-med').click();
  await page.locator('[data-toggle]').click();await page.locator('[data-v="plan"]').click();await page.locator('.day-cell.today').click();
- await page.locator('#pp-corr-note').fill('QA correction');await page.locator('#pp-corr-undo').click();await expect(page.locator('#pp-corr-save')).toHaveCount(0);
+ await page.locator('#pp-more-details summary').click();await page.locator('#pp-corr-note').fill('QA correction');await page.locator('#pp-corr-undo').click();await expect(page.locator('#pp-corr-save')).toHaveCount(0);
  await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();await context.setOffline(true);await page.reload();
  await page.locator('[data-toggle]').click();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
  await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
