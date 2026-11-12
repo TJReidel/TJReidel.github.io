@@ -54,9 +54,9 @@ function compareEvents(a,b){return (a.sequence||0)-(b.sequence||0)||String(a.cre
 async function latestEvents(){const ev=await all('events');ev.sort(compareEvents);const m={};for(const e of ev)m[e.slot]=e;return m}
 function hasActualTime(e){return e?.documentationVersion===2&&e.type==='taken'&&Boolean(e.actualTakenLocal)}
 function actualTimeText(e){return hasActualTime(e)?`${e.actualTakenLocal.replace('T',' ')} (${e.actualTimeZone})`:tr('unknownTime')}
-function recordedTimeText(e){if(!e)return'—';const stamp=e.documentedAt||e.createdAt;if(!stamp||!Number.isFinite(Date.parse(stamp)))return'—';return new Date(stamp).toLocaleString(LANGS[lang].locale,{timeZone:e.timeZone||deviceTimeZone()})+` (${e.timeZone||deviceTimeZone()})`}
+function recordedTimeText(e){if(!e)return'—';if(e.legacy&&!e.documentedAt)return tr('unknownTime');const stamp=e.documentedAt||e.createdAt;if(!stamp||!Number.isFinite(Date.parse(stamp)))return'—';return new Date(stamp).toLocaleString(LANGS[lang].locale,{timeZone:e.timeZone||deviceTimeZone()})+` (${e.timeZone||deviceTimeZone()})`}
 function eventTier(e){return e?.type==='taken'?(hasActualTime(e)?'green':'unrated'):e?.type==='not_taken'?'not_taken':e?.type==='unknown'?'unknown':'open'}
-function planSnapshot(m,date,time){const h=(m.scheduleHistory||[]).filter(x=>x.from<=date).sort((a,b)=>a.from.localeCompare(b.from));return{plannedAtLocal:date+'T'+time,planTimeZone:planTimeZone(),planVersion:h.at(-1)?.from||m.startDate||null}}
+function planSnapshot(m,date,time){const h=(m.scheduleHistory||[]).filter(x=>x.from<=date).sort((a,b)=>a.from.localeCompare(b.from));return{plannedAtLocal:date+'T'+time,planTimeZone:planTimeZone(),planVersion:JSON.stringify({from:h.at(-1)?.from||m.startDate||null,times:timesForDate(m,date)})}}
 function validLocalTime(value){if(!/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(value||''))return false;const d=new Date(value+'Z');return Number.isFinite(+d)&&d.toISOString().slice(0,16)===value}
 function localInZone(now,zone){const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now).map(p=>[p.type,p.value]));return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`}
 function actualDetails(mode,value,zone,now=new Date()){
