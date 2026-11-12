@@ -82,3 +82,15 @@ test('concurrent writes, failed transaction, clock rollback and safe backup roun
  dialog=page.waitForEvent('dialog');await page.locator('#import-btn').click();await dialog;
  expect(await snapshot(page)).toEqual(after);
 });
+
+test('first installation can reopen offline without an extra online reload',async({page,context})=>{
+ await create(page,'SYNTHETIC COLD OFFLINE');
+ await page.evaluate(()=>navigator.serviceWorker.ready);
+ await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller))).toBe(true);
+ await context.setOffline(true);
+ await page.reload();
+ await expect(page.locator('.dose-name')).toHaveText('SYNTHETIC COLD OFFLINE');
+ await expect(page.locator('.bottom-nav')).toBeVisible();
+ expect(await page.locator('.dose-card').evaluate(e=>getComputedStyle(e).display)).toBe('flex');
+ await context.setOffline(false);
+});

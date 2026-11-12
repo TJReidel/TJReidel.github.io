@@ -5,8 +5,11 @@ const ASSETS=[
   '/pillplan-next/',
   SHELL,
   '/pillplan-next/core-v5.js',
+  '/pillplan-next/core-v5.js?v=30-documentation-times',
   '/pillplan-next/design-master-v4.css',
+  '/pillplan-next/design-master-v4.css?v=30-documentation-times',
   '/pillplan-next/design-master.css',
+  '/pillplan-next/design-master.css?v=4-privacy',
   '/pillplan-next/manifest.json',
   '/icon.png',
   '/icon-512.png'

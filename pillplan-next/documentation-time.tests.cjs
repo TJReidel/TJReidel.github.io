@@ -28,6 +28,8 @@ for(const tier of ['green','yellow','red','unrated']){
  assert.ok(!run('statusText(e)').includes('verspätet'));
 }
 assert.equal(run('eventTier(null)'),'open');
+c.e={type:'taken',legacy:true,createdAt:'2026-11-12T09:00:00Z'};
+assert.equal(run('recordedTimeText(e)'),'Zeit unbekannt','legacy-import timestamps may be reconstructed and are not asserted recording times');
 c.e={type:'undo'};assert.equal(run('eventTier(e)'),'open');
 c.e={type:'not_taken'};assert.equal(run('eventTier(e)'),'not_taken');
 c.e={type:'unknown'};assert.equal(run('eventTier(e)'),'unknown');
