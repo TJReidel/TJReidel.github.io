@@ -4,6 +4,7 @@ const URL='http://127.0.0.1:8765/pillplan-next/';
 async function snapshot(page){return page.evaluate(async()=>({meds:await all('meds'),events:(await all('events')).sort(compareEvents),meta:await all('meta')}))}
 async function create(page,name='SYNTHETIC TIME QA'){
  await page.goto(URL);await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill(name);await page.locator('#add-med').click();
+ await expect(page.locator('.dose-name')).toHaveText(name);
 }
 
 test('reported intake at 08:00, recorded at 10:00; unknown time, explicit statuses and offline correction',async({page,context},testInfo)=>{
