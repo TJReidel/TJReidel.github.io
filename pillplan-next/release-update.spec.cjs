@@ -61,7 +61,7 @@ test('release update: production baseline to candidate, same origin, offline and
   const oldBackup=await exportBackup();
   root=process.cwd();
   await page.reload();
-  await settleWorker('pillplan-next-v29-privacy-closure');
+  await settleWorker('pillplan-next-v32-historical-colours');
   const after=await snapshot();expect(after).toEqual(before);expect(after.version).toBe(1);
   const live=await page.evaluate(()=>fetch('/pillplan-next/core-v5.js',{cache:'no-store'}).then(r=>r.text()));
   const expected=fs.readFileSync('pillplan-next/core-v5.js','utf8');expect(live).toBe(expected);
@@ -80,7 +80,7 @@ test('release update: production baseline to candidate, same origin, offline and
   await page.locator('#import-btn').click();await invalidFinished;expect(await snapshot()).toEqual(before);
   await page.reload();await context.setOffline(true);await page.reload();
   await expect(page.locator('.dose-name').first()).toHaveText('FICTIONAL_UPDATE_CANARY QA strength');
-  await page.locator('[data-toggle]').first().click();
+  await page.locator('[data-earlier]').first().click();await page.locator('#pp-more-details summary').click();await page.locator('#pp-corr-undo').click();
   await expect(page.locator('.dose-status').first()).not.toContainText(/Dokumentiert|Documented/);
   const offline=await snapshot();expect(offline.events.length).toBe(before.events.length+1);
   await page.close();page=await context.newPage();page.on('dialog',d=>d.accept());await page.goto(url);

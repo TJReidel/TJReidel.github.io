@@ -1,12 +1,15 @@
-const CACHE='pillplan-next-v29-privacy-closure';
-const PREVIOUS_CACHE='pillplan-next-v27-report-closure';
+const CACHE='pillplan-next-v32-historical-colours';
+const PREVIOUS_CACHE='pillplan-next-v31-simple-today';
 const SHELL='/pillplan-next/index.html';
 const ASSETS=[
   '/pillplan-next/',
   SHELL,
   '/pillplan-next/core-v5.js',
+  '/pillplan-next/core-v5.js?v=32-historical-colours',
   '/pillplan-next/design-master-v4.css',
+  '/pillplan-next/design-master-v4.css?v=32-historical-colours',
   '/pillplan-next/design-master.css',
+  '/pillplan-next/design-master.css?v=4-privacy',
   '/pillplan-next/manifest.json',
   '/icon.png',
   '/icon-512.png'
