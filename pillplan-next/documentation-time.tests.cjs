@@ -25,6 +25,7 @@ assert.equal(run("actualDetails('reported','2026-10-25T02:30','Europe/Berlin',cl
 for(const tier of ['green','yellow','red','unrated']){
  c.e={type:'taken',tier,createdAt:'2026-11-12T09:00:00Z'};
  assert.equal(run('eventTier(e)'),'unrated');assert.equal(run('actualTimeText(e)'),'Zeit unbekannt');
+ assert.equal(run('visualTier(e)'),tier);
  assert.ok(!run('statusText(e)').includes('verspätet'));
 }
 assert.equal(run('eventTier(null)'),'open');

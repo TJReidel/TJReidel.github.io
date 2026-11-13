@@ -1,6 +1,21 @@
 const {test,expect}=require('@playwright/test');
 test.use({locale:'de-DE',timezoneId:'Europe/Berlin',viewport:{width:390,height:844}});
 const URL='http://127.0.0.1:8765/pillplan-next/';
+test('historical calendar colours retained without rewriting records or rating late documentation',async({page},testInfo)=>{
+ await page.goto(URL);
+ const before=await page.evaluate(async()=>{
+  const d=today(),start=addDays(d,-3),m={id:42,name:'SYNTHETIC COLOUR QA',times:['08:00'],startDate:start};
+  const events=['green','yellow','red'].map((tier,i)=>({eventId:'legacy-'+i,slot:slotKey(42,addDays(d,i-3),'08:00'),type:'taken',tier,createdAt:new Date().toISOString()}));
+  const date=d,stamp=new Date().toISOString();events.push({eventId:'new',slot:slotKey(42,date,'08:00'),type:'taken',tier:'red',documentationVersion:2,sequence:1,plannedAtLocal:date+'T08:00',createdAt:stamp,documentedAt:stamp,actualTakenAt:null,actualTakenLocal:date+'T00:00',actualTimeZone:deviceTimeZone(),actualTimeSource:'reported'});
+  const backup={meds:[m],events,meta:[]};await importBackup({text:async()=>JSON.stringify(backup)});return await all('events');
+ });
+ await page.locator('[data-v="plan"]').click();
+ const dates=await page.evaluate(()=>[-3,-2,-1,0].map(i=>addDays(today(),i)));
+ for(const [i,cls] of ['done','tier-yellow','tier-red','done'].entries())await expect(page.locator(`[data-day="${dates[i]}"]`)).toHaveClass(new RegExp(cls));
+ await page.locator('.status-legend summary').click();await expect(page.locator('.status-legend')).toContainText('Historische Zeitbewertung');
+ await page.screenshot({path:testInfo.outputPath('historical-colours.png'),fullPage:true});
+ expect(await page.evaluate(()=>all('events'))).toEqual(before);
+});
 async function snapshot(page){return page.evaluate(async()=>({meds:await all('meds'),events:(await all('events')).sort(compareEvents),meta:await all('meta')}))}
 async function create(page,name='SYNTHETIC TIME QA'){
  await page.goto(URL);await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill(name);await page.locator('#add-med').click();
