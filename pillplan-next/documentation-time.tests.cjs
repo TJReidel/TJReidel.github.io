@@ -29,9 +29,14 @@ for(const tier of ['green','yellow','red','unrated']){
  assert.ok(!run('statusText(e)').includes('verspätet'));
 }
 assert.equal(run('eventTier(null)'),'open');
+const originalDeviceZone=run('deviceTimeZone');
+run("deviceTimeZone=()=> 'Europe/Berlin'");
 assert.equal(run("openTiming('2026-11-12','11:00',clock)"),'upcoming');
 assert.equal(run("openTiming('2026-11-12','10:00',clock)"),'dueOpen');
 assert.equal(run("openTiming('2026-11-12','08:00',clock)"),'pastOpen');
+run("deviceTimeZone=()=> 'UTC'");
+assert.equal(run("openTiming('2026-11-12','08:00',clock)"),'zoneOpen');
+c.originalDeviceZone=originalDeviceZone;run('deviceTimeZone=originalDeviceZone');
 assert.equal(run("dayIcon('not_taken')"),'×');assert.equal(run("dayIcon('unknown')"),'?');assert.equal(run("dayIcon('upcoming')"),'◷');
 assert.ok(run("statusText({type:'taken',tier:'red'})").includes('Einnahmezeit unbekannt'));
 assert.ok(run("statusText({type:'not_taken'},'2026-11-12','11:00',clock)").includes('Nicht eingenommen'));
