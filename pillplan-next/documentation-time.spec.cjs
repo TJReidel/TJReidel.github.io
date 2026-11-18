@@ -2,7 +2,7 @@ const {test,expect}=require('@playwright/test');
 test.use({locale:'de-DE',timezoneId:'Europe/Berlin',viewport:{width:390,height:844}});
 const URL='http://127.0.0.1:8765/pillplan-next/';
 test('historical calendar colours retained without rewriting records or rating late documentation',async({page},testInfo)=>{
- await page.goto(URL);
+ await page.goto(URL);await expect(page.locator('.bottom-nav')).toBeVisible();
  const before=await page.evaluate(async()=>{
   const d=today(),start=addDays(d,-3),m={id:42,name:'SYNTHETIC COLOUR QA',times:['08:00'],startDate:start};
   const events=['green','yellow','red'].map((tier,i)=>({eventId:'legacy-'+i,slot:slotKey(42,addDays(d,i-3),'08:00'),type:'taken',tier,createdAt:new Date().toISOString()}));
@@ -64,8 +64,8 @@ test('reported intake at 08:00, recorded at 10:00; unknown time, explicit status
  await expect(page.locator('.dose-status')).toContainText('Nicht eingenommen');
  await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();await context.setOffline(true);await page.reload();
  await page.locator('[data-earlier]').click();await page.locator('#pp-corr-state').selectOption('undo');await page.locator('#pp-corr-save').click();
- await expect(page.locator('.dose-status')).toHaveText('Noch nicht bestätigt');
- await page.reload();await expect(page.locator('.dose-status')).toHaveText('Noch nicht bestätigt');
+ await expect(page.locator('.dose-status')).toHaveText(/^(Fällig · noch nicht bestätigt|Noch nicht fällig)$/);
+ await page.reload();await expect(page.locator('.dose-status')).toHaveText(/^(Fällig · noch nicht bestätigt|Noch nicht fällig)$/);
  await page.getByRole('button',{name:/Jetzt eingenommen/}).click();
  await expect(page.locator('.dose-status')).toHaveText('Dokumentiert · eingenommen');
  rows=(await snapshot(page)).events;expect(rows).toHaveLength(6);expect(rows[5].actualTimeSource).toBe('now');
@@ -91,7 +91,7 @@ test('concurrent writes, failed transaction, clock rollback and safe backup roun
  expect(failed).toBe(true);expect(await snapshot(page)).toEqual(before);
  await page.clock.install({time:new Date(Date.now()-3600000)});
  await page.evaluate(async()=>{const m=(await all('meds'))[0],e=(await all('events'))[0];await appendDocumentation(m.id,today(),m.times[0],'undo',actualDetails('unknown'),e.eventId);await render()});
- await expect(page.locator('.dose-status')).toHaveText('Noch nicht bestätigt');
+ await expect(page.locator('.dose-status')).toHaveText(/^(Fällig · noch nicht bestätigt|Noch nicht fällig)$/);
  const after=await snapshot(page);expect(after.events).toHaveLength(2);expect(after.events[1].sequence).toBe(2);
  expect(after.events[1].createdAt<after.events[0].createdAt).toBe(true);
  await page.locator('[data-v="settings"]').click();
@@ -123,7 +123,7 @@ test('first installation can reopen offline without an extra online reload',asyn
 
 test('WP03 upcoming versus unconfirmed, explicit states and legacy label consistency',async({page})=>{
  await page.clock.install({time:new Date('2026-11-12T09:00:00Z')});
- await page.goto('http://127.0.0.1:8765/pillplan-next/');
+ await page.goto('http://127.0.0.1:8765/pillplan-next/');await expect(page.locator('.bottom-nav')).toBeVisible();
  await page.evaluate(async()=>{
   const d=today(),zone=deviceTimeZone();localStorage.setItem('pillplan_timezone',zone);
   const current=localInZone(new Date(),zone);
@@ -143,4 +143,23 @@ test('WP03 upcoming versus unconfirmed, explicit states and legacy label consist
  await page.locator('[data-v="settings"]').click();await page.locator('#report-btn').click();
  await expect(page.locator('#pp-report-sheet')).toContainText(/Noch nicht fällig|Not due yet/);
  await expect(page.locator('#pp-report-sheet .pp-report-status.red')).toContainText(/Einnahmezeit unbekannt|intake time unknown/);
+});
+
+test('WP03 stable due status, travel state and legend/focus retained',async({page})=>{
+ await page.clock.install({time:new Date('2026-11-12T07:00:00Z')});
+ await page.goto(URL);await expect(page.locator('.bottom-nav')).toBeVisible();
+ await page.evaluate(async()=>{const d=today();await importBackup({text:async()=>JSON.stringify({meds:[{id:81,name:'SYNTHETIC TIME',times:['08:00'],startDate:addDays(d,-1)}],events:[],meta:[]})})});
+ await expect(page.locator('.dose-status')).toHaveText('Fällig · noch nicht bestätigt');
+ await page.clock.fastForward(61000);await expect(page.locator('.dose-status')).toHaveText('Fällig · noch nicht bestätigt');
+ await page.locator('[data-v="plan"]').click();await page.locator('.status-legend summary').click();
+ await page.locator('.status-legend summary').focus();
+ await page.clock.fastForward(61000);
+ await expect(page.locator('.status-legend')).toHaveAttribute('open','');
+ await expect(page.locator('.status-legend summary')).toBeFocused();
+ await page.evaluate(async()=>{localStorage.setItem('pillplan_timezone','UTC');await render()});
+ await expect(page.locator('[data-mid="81"].today .day-ico')).toHaveText('↔');
+ const yesterday=await page.evaluate(()=>addDays(today(),-1));
+ await expect(page.locator('[data-mid="81"][data-day="'+yesterday+'"] .day-ico')).toHaveText('○');
+ await page.locator('[data-v="settings"]').click();await page.locator('#report-btn').click();
+ await expect(page.locator('#pp-report-sheet .pp-report-meta').first()).toContainText(/2026-11-12 07:0[2-9]/);
 });

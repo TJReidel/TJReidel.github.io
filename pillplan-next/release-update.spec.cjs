@@ -63,7 +63,7 @@ test('release update: production baseline to candidate, same origin, offline and
   console.log('WP02 stage: baseline export');const oldBackup=await exportBackup();
   root=process.cwd();
   await page.reload();
-  await settleWorker('pillplan-next-v35-status-clarity');
+  await settleWorker('pillplan-next-v36-status-clarity');
   const after=await snapshot();expect(after).toEqual(before);expect(after.version).toBe(1);
   const live=await page.evaluate(()=>fetch('/pillplan-next/core-v5.js',{cache:'no-store'}).then(r=>r.text()));
   const expected=fs.readFileSync('pillplan-next/core-v5.js','utf8');expect(live).toBe(expected);
