@@ -6,6 +6,10 @@ vm.runInContext(src,ctx);
 function prepare(obj){ctx.input=obj;return vm.runInContext('prepareBackup(input)',ctx)}
 const valid={meds:[{id:1,name:'Test',times:['08:00']}],events:[{eventId:'e1',slot:'2026-10-10_1_08:00',type:'taken'}],meta:[{key:'timeZone',value:'Europe/Berlin'}]};
 assert.equal(prepare(valid).meds.length,1);
+for(const schema of ['pillplan-next-consolidated-v6','pillplan-next-consolidated-v7'])assert.equal(prepare({...valid,schema}).meds.length,1);
+for(const schema of ['pillplan-next-consolidated-v8','unknown',null])assert.throws(()=>prepare({...valid,schema}));
+assert.equal(vm.runInContext('requiresSafetyBackup({meds:[],events:[],meta:[]})',ctx),false);
+assert.equal(vm.runInContext('requiresSafetyBackup({meds:[],events:[],meta:[{key:"test"}]})',ctx),true);
 for(const corrupt of [
  {meds:[{id:1,name:'',times:['08:00']}],events:[]},
  {meds:[{id:1,name:'Test',times:['99:99']}],events:[]},

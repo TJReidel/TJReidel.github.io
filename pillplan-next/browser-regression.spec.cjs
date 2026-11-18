@@ -240,4 +240,22 @@ test('WP02 safe export, cancellation, mismatch, stale snapshot, protected restor
  expect((await snap()).meds).toEqual(before.meds);expect((await snap()).meta.some(x=>x.key==='synthetic-concurrent-change')).toBe(true);
  await page.locator('#pp-safety-cancel').click();await select();await guardedRestore(page);
  const restored=await snap();expect(restored.meds[0].name).toBe('WP02 SYNTHETIC RESTORED');expect(restored.events).toEqual(incoming.events);expect(restored.meta).toEqual(incoming.meta);
+ await expect(page.locator('#last-backup-export')).toContainText(/Noch kein|No export/);
+});
+
+test('WP02 empty device restore without export, unknown schema rejected, concurrent new records protected',async({page})=>{
+ page.on('dialog',d=>d.accept());await page.goto('http://127.0.0.1:8765/pillplan-next/');
+ await page.locator('[data-v="settings"]').click();
+ const incoming={schema:'pillplan-next-consolidated-v7',meds:[{id:321,name:'SYNTHETIC EMPTY RESTORE',times:['08:00']}],events:[],meta:[]};
+ const select=async data=>{await page.locator('#backup-file').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))});await page.locator('#import-btn').click()};
+ await select({...incoming,schema:'pillplan-next-consolidated-v8'});
+ await expect(page.locator('#pp-modal')).toHaveCount(0);
+ expect((await page.evaluate(()=>backupSnapshot())).meds).toHaveLength(0);
+ await select(incoming);await expect(page.locator('#pp-safety-replace')).toBeEnabled();await expect(page.locator('#pp-safety-export')).toHaveCount(0);
+ await page.evaluate(()=>rawPut('meta',{key:'new-metadata',value:1}));
+ await page.locator('#pp-safety-replace').click();await expect(page.locator('#pp-safety-message')).toContainText(/geändert|changed/);
+ await page.locator('#pp-safety-cancel').click();await select(incoming);await expect(page.locator('#pp-safety-replace')).toBeDisabled();
+ await page.locator('#pp-safety-cancel').click();await page.evaluate(()=>clear('meta'));
+ await select(incoming);await page.locator('#pp-safety-replace').click();await expect(page.locator('#pp-modal')).toHaveCount(0);
+ expect((await page.evaluate(()=>backupSnapshot())).meds).toEqual(incoming.meds);
 });

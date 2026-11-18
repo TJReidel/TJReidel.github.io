@@ -2,8 +2,8 @@
 'use strict';
 
 const DB_NAME='pillplan-next-db', DB_VERSION=1;
-const RUNTIME_VERSION='v5-backup-safety-v1';
-const APP_VERSION='1.3-dev-wp02';
+const RUNTIME_VERSION='v5-backup-safety-v2';
+const APP_VERSION='1.3-dev-wp02.1';
 const LANGS={de:{label:'Deutsch',locale:'de-DE',dir:'ltr'},en:{label:'English',locale:'en-GB',dir:'ltr'},fr:{label:'Français',locale:'fr-FR',dir:'ltr'},es:{label:'Español',locale:'es-ES',dir:'ltr'},it:{label:'Italiano',locale:'it-IT',dir:'ltr'},tr:{label:'Türkçe',locale:'tr-TR',dir:'ltr'},ar:{label:'العربية',locale:'ar',dir:'rtl'},ru:{label:'Русский',locale:'ru-RU',dir:'ltr'},pt:{label:'Português',locale:'pt-PT',dir:'ltr'}};
 const TX={
  de:{today:'Heute',documentation:'Dokumentation',documented:'dokumentiert',punctuality:'Zeitabweichung',day:'Tag',days:'Tage',inRow:'in Folge',week1:'1 Woche',week2:'2 Wochen',week3:'3 Wochen',month1:'1 Monat',legend:'Was bedeuten die Farben?',green:'Grün – Einnahmezeit als eingehalten dokumentiert',yellow:'Gelb – dokumentierte Zeitabweichung: 30–44 Min.',red:'Rot – dokumentierte Zeitabweichung: 45+ Min.',neutral:'Hellgrau – nachgetragen, genaue Zeit unbekannt',openLegend:'Nicht dokumentiert',open:'Offen',statusRed:'Dokumentiert · 45+ Min. verspätet',statusYellow:'Dokumentiert · 30–44 Min. verspätet',statusNeutral:'Dokumentiert · Zeit unbekannt',statusGreen:'Dokumentiert · Zeit eingehalten',allDone:'Alles für heute dokumentiert',allDoneSub:'Gut im Blick. Morgen geht es einfach weiter.',firstCheck:'Dein erster Check wartet.',partial:'{done} von {tot} dokumentiert. Du bleibst dran.',tip:'Ein Tipp genügt zur Dokumentation.',noneToday:'Heute sind keine Medikamente geplant.',doctor:'PillPlan dokumentiert Ihre Angaben. Farbmarkierungen zeigen ausschließlich Zeitabweichungen in der Dokumentation, keine medizinische Risikobewertung. Änderungen an Medikamenten oder Dosierungen bitte mit Ihrer behandelnden Fachperson klären.',edit:'Bearbeiten',end:'Beenden',ended:'Beendet',endedOn:'Beendet am {date}',noneCurrent:'Aktuell keine Einnahme',addMed:'Medikament hinzufügen',medication:'Medikament',medName:'Name des Medikaments',intakeTime:'Einnahmezeit',moreTime:'＋ Weitere Einnahmezeit',dose:'Dosis / Stärke',dosePh:'z. B. 5 mg',doctorRule:'Ärztliche Vorgabe',doctorPh:'z. B. morgens nüchtern / nach dem Essen',expiry:'MHD / Verfallsdatum',color:'Kennfarbe',saveMed:'Medikament speichern',settings:'Einstellungen',data:'Daten',localStorage:'Lokale Speicherung auf diesem Gerät',backup:'Sicherung',importBackup:'Backup importieren',exportBackup:'Backup exportieren',last30:'Letzte 30 Tage',documentedIntakes:'Dokumentierte Einnahmen',punctual:'Zeit eingehalten',late30:'30–44 Min.',late45:'45+ Min.',backfilled:'Nachgetragen',share:'Teilen',shareSub:'Kurze Zusammenfassung teilen oder kopieren',print:'Drucken',printSub:'Aktuelle Ansicht drucken',add:'HINZUFÜGEN',plan:'PLAN',todayNav:'HEUTE',settingsNav:'EINSTELLUNGEN',language:'Sprache',languageSub:'Sprache der App',version:'Version',chooseFile:'Bitte zuerst eine Sicherungsdatei auswählen.',importOk:'Import erfolgreich.',importFail:'Import fehlgeschlagen: {err}',needName:'Bitte Medikamentenname eingeben.',needTime:'Bitte mindestens eine Einnahmezeit angeben.',badTime:'Bitte gültige Uhrzeiten als HH:MM eingeben.',badDate:'Bitte MHD als JJJJ-MM-TT eingeben.',noPlanDay:'Für diesen Tag war keine Einnahme geplant.',undoQ:'{name} am {date} um {time} wurde bereits dokumentiert.\n\nDiesen Eintrag wirklich zurücknehmen?',endQ:'{name} nach heute beenden? Die bisherige Historie bleibt vollständig erhalten.',endPrompt:'{name} beenden – die Historie bleibt erhalten.\n1 = ab heute beenden\n2 = nach heute beenden',tomorrowNotice:'Für heute ist bereits eine Einnahme dokumentiert. Die neuen Einnahmezeiten gelten deshalb ab morgen.',shareCopied:'Zusammenfassung kopiert.',shareFail:'Teilen war nicht möglich.',fatal:'PillPlan konnte nicht gestartet werden.',mhdExpired:'{name}: MHD überschritten',mhdDays:'{name}: MHD in {n} Tagen',actionsFor:'Aktionen für {name}',timezone:'Zeitzone',timezoneSub:'Einnahmezeiten bleiben lokale, ärztlich vorgegebene Zielzeiten.',timezonePlan:'Plan-Zeitzone',timezoneDevice:'Geräte-Zeitzone',timezoneChanged:'Zeitzonenwechsel erkannt – Einnahmeplan prüfen.',timezoneChangedSub:'PillPlan verschiebt Einnahmezeiten nicht automatisch. Prüfen Sie die ärztlich vorgegebenen Zeiten und bestätigen Sie erst danach die neue Zeitzone.',timezoneAccept:'Geräte-Zeitzone übernehmen',timezoneSame:'Zeitzone aktuell',timezoneConfirmed:'Zeitzone bestätigt.',correct:'Dokumentation korrigieren',currentTaken:'Aktuell: dokumentiert',currentOpen:'Aktuell: nicht dokumentiert',note:'Notiz / Grund (optional)',cancel:'Abbrechen',undo:'Eintrag zurücknehmen',backfill:'Einnahme nachtragen',selectIntake:'Einnahme auswählen',saveChanges:'Änderungen speichern',newTimesApply:'Neue Zeiten gelten',fromToday:'ab heute',fromTomorrow:'ab morgen'},
@@ -178,39 +178,44 @@ function dispatchBackup(payload,name){
 async function exportBackup(){try{dispatchBackup(await backupPayload(),'PillPlan_Backup_'+today()+'.json')}catch{alert(bk('fail'))}}
 async function storageProtection(){try{if(typeof navigator.storage?.persisted!=='function')return'unsupported';return await navigator.storage.persisted()?'yes':'no'}catch{return'unknown'}}
 async function requestStorageProtection(){try{if(typeof navigator.storage?.persist!=='function')return'unsupported';await navigator.storage.persist();return await storageProtection()}catch{return'unknown'}}
+function requiresSafetyBackup(d){return d.meds.length>0||d.events.length>0||d.meta.length>0}
 function backupCount(d){return bk('counts',{m:d.meds.length,e:d.events.length,a:d.meta.length})}
 async function beginProtectedImport(file){
  const source=JSON.parse(await file.text()),incoming=prepareBackup(source),safety=await backupPayload();
  // A safety copy must itself be structurally restorable before any destructive action is offered.
- prepareBackup(JSON.parse(backupBytes(safety)));
+ const needsSafety=requiresSafetyBackup(safety);
+ if(needsSafety)prepareBackup(JSON.parse(backupBytes(safety)));
  const name='PillPlan_Vor_Import_'+safety.exportedAt.replace(/[:.]/g,'-')+'.json';
  const w=modal('<div class="form-title">'+esc(bk('restore'))+'</div><p class="settings-row-sub" role="alert">'+esc(bk('warning'))+'</p>'+
  '<div class="pp-corr-state">'+esc(bk('current'))+'<br>'+esc(backupCount(safety))+'<br><br>'+esc(bk('incoming'))+'<br>'+esc(backupCount(incoming))+'<br>'+esc(bk('date'))+': '+esc(backupDate(source.exportedAt))+'</div>'+
- '<button id="pp-safety-export" class="secondary-action full">'+esc(bk('save'))+'</button><label for="pp-safety-file" class="form-label">'+esc(bk('select'))+'</label><input id="pp-safety-file" class="form-input" type="file" accept="application/json,.json" disabled>'+
- '<p id="pp-safety-message" class="settings-row-sub" role="status" aria-live="polite"></p><div class="pp-modal-actions"><button id="pp-safety-cancel" class="secondary-action">'+esc(bk('cancel'))+'</button><button id="pp-safety-replace" class="primary-action pp-danger-action" disabled>'+esc(bk('replace'))+'</button></div>');
+ (needsSafety?'<button id="pp-safety-export" class="secondary-action full">'+esc(bk('save'))+'</button><label for="pp-safety-file" class="form-label">'+esc(bk('select'))+'</label><input id="pp-safety-file" class="form-input" type="file" accept="application/json,.json" disabled>':'')+
+ '<p id="pp-safety-message" class="settings-row-sub" role="status" aria-live="polite"></p><div class="pp-modal-actions"><button id="pp-safety-cancel" class="secondary-action">'+esc(bk('cancel'))+'</button><button id="pp-safety-replace" class="primary-action pp-danger-action" '+(needsSafety?'disabled':'')+'>'+esc(needsSafety?bk('replace'):bk('restore'))+'</button></div>');
  w.onclick=null;
  const el=id=>w.querySelector('#'+id),download=el('pp-safety-export'),input=el('pp-safety-file'),replace=el('pp-safety-replace'),cancel=el('pp-safety-cancel'),message=el('pp-safety-message');let dispatched=false,busy=false;
  cancel.onclick=()=>{if(!busy)modalClose()};
- download.onclick=()=>{try{dispatchBackup(safety,name);dispatched=true;input.disabled=false;message.textContent=bk('proof')}catch{message.textContent=bk('fail')}};
- input.onchange=()=>{replace.disabled=!dispatched||!input.files?.[0];message.textContent=''};
+ if(download)download.onclick=()=>{try{dispatchBackup(safety,name);dispatched=true;input.disabled=false;message.textContent=bk('proof')}catch{message.textContent=bk('fail')}};
+ if(input)input.onchange=()=>{replace.disabled=!dispatched||!input.files?.[0];message.textContent=''};
  replace.onclick=async()=>{
-   if(busy||!dispatched||!input.files?.[0])return;
-   busy=true;replace.disabled=true;cancel.disabled=true;input.disabled=true;download.disabled=true;
+   if(busy||(needsSafety&&(!dispatched||!input.files?.[0])))return;
+   busy=true;replace.disabled=true;cancel.disabled=true;if(input)input.disabled=true;if(download)download.disabled=true;
    let committed=false,warning=false;
    try{
-     if(await input.files[0].text()!==backupBytes(safety)){message.textContent=bk('wrong');return}
+     if(needsSafety&&await input.files[0].text()!==backupBytes(safety)){message.textContent=bk('wrong');return}
      if(!w.isConnected)return;
      await replaceBackupRecords(incoming,safety);committed=true;
+     try{localStorage.removeItem(LAST_EXPORT_KEY)}catch{warning=true}
      try{await restoreBackupPreferences(incoming)}catch{warning=true}
    }catch(e){message.textContent=e.message||bk('changed');return}
-   finally{if(!committed){busy=false;replace.disabled=false;cancel.disabled=false;input.disabled=false;download.disabled=false}}
+   finally{if(!committed){busy=false;replace.disabled=false;cancel.disabled=false;if(input)input.disabled=false;if(download)download.disabled=false}}
    modalClose();alert(bk(warning?'prefs':'done'));
  };
 }
 function legacyTier(v){if(v===true)return'unrated';if(v===false||v==null)return null;if(typeof v==='object'){if(v.taken===false)return null;return v.tier||'unrated'}return null}
 function prepareBackup(obj){
   if(!obj||typeof obj!=='object')throw Error('Invalid backup');
+  if(Object.prototype.hasOwnProperty.call(obj,'schema')&&!['pillplan-next-consolidated-v6','pillplan-next-consolidated-v7'].includes(obj.schema))throw Error('Unsupported backup schema');
   const state=obj.localStorage?.pillplan_v4 ? (typeof obj.localStorage.pillplan_v4==='string'?JSON.parse(obj.localStorage.pillplan_v4):obj.localStorage.pillplan_v4):obj;
+  if(state!==obj&&Object.prototype.hasOwnProperty.call(state,'schema')&&!['pillplan-next-consolidated-v6','pillplan-next-consolidated-v7'].includes(state.schema))throw Error('Unsupported backup schema');
   let meds,events,meta;
   if(Array.isArray(state.meds)&&Array.isArray(state.events)){
     meds=state.meds;events=state.events;meta=state.meta||[];

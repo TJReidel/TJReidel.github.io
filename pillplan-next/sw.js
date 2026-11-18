@@ -1,13 +1,13 @@
-const CACHE='pillplan-next-v33-backup-safety';
-const PREVIOUS_CACHE='pillplan-next-v32-historical-colours';
+const CACHE='pillplan-next-v34-backup-safety';
+const PREVIOUS_CACHE='pillplan-next-v33-backup-safety';
 const SHELL='/pillplan-next/index.html';
 const ASSETS=[
   '/pillplan-next/',
   SHELL,
   '/pillplan-next/core-v5.js',
-  '/pillplan-next/core-v5.js?v=33-backup-safety',
+  '/pillplan-next/core-v5.js?v=34-backup-safety',
   '/pillplan-next/design-master-v4.css',
-  '/pillplan-next/design-master-v4.css?v=33-backup-safety',
+  '/pillplan-next/design-master-v4.css?v=34-backup-safety',
   '/pillplan-next/design-master.css',
   '/pillplan-next/design-master.css?v=4-privacy',
   '/pillplan-next/manifest.json',
