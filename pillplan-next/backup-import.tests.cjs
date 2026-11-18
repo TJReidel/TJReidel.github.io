@@ -12,7 +12,9 @@ for(const corrupt of [
  {meds:[{id:1,name:'A',times:[]},{id:1,name:'B',times:[]}],events:[]},
  {meds:[],events:[{eventId:'e1',slot:'x',type:'taken'},{eventId:'e1',slot:'y',type:'taken'}]},
  {meds:[],events:[],meta:[{}]},
- {meds:[],events:'invalid'}
+ {meds:[],events:'invalid'},
+ {...valid,timeZone:'Invalid/Zone'},
+ {...valid,timeZone:123}
 ])assert.throws(()=>prepare(corrupt));
 let stores={meds:[{id:999,name:'EXISTING'}],events:[],meta:[]};
 let transactions=0;
@@ -29,5 +31,14 @@ ctx.applyLang=()=>{};ctx.render=async()=>{};
  await assert.rejects(vm.runInContext('importBackup(fakeFile)',ctx));
  assert.equal(JSON.stringify(stores),snapshot);
  assert.equal(transactions,1);
- console.log('PASS backup validation, duplicate keys, single transaction, malformed data retains records');
+ const run=x=>vm.runInContext(x,ctx);
+ assert.equal(await run('storageProtection()'),'unsupported');
+ assert.equal(await run('requestStorageProtection()'),'unsupported');
+ ctx.navigator.storage={persisted:async()=>false,persist:async()=>false};
+ assert.equal(await run('storageProtection()'),'no');assert.equal(await run('requestStorageProtection()'),'no');
+ ctx.navigator.storage={persisted:async()=>true,persist:async()=>true};
+ assert.equal(await run('requestStorageProtection()'),'yes');
+ ctx.navigator.storage={persisted:async()=>{throw Error('denied')},persist:async()=>{throw Error('denied')}};
+ assert.equal(await run('storageProtection()'),'unknown');assert.equal(await run('requestStorageProtection()'),'unknown');
+ console.log('PASS backup validation, duplicate keys, single transaction, malformed data retains records, storage API status paths');
 })().catch(e=>{console.error(e);process.exitCode=1});

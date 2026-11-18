@@ -99,11 +99,13 @@ test('concurrent writes, failed transaction, clock rollback and safe backup roun
  const fs=require('node:fs'),backup=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
  expect(backup.schema).toBe('pillplan-next-consolidated-v7');
  await page.locator('#backup-file').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
- let dialog=page.waitForEvent('dialog');await page.locator('#import-btn').click();await dialog;
+ await page.locator('#import-btn').click();await expect(page.locator('#pp-safety-replace')).toBeDisabled();
+ const safeWait=page.waitForEvent('download');await page.locator('#pp-safety-export').click();const safe=await safeWait;
+ await page.locator('#pp-safety-file').setInputFiles(await safe.path());await page.locator('#pp-safety-replace').click();await expect(page.locator('#pp-modal')).toHaveCount(0);
  expect(await snapshot(page)).toEqual(after);
  const broken={...backup,events:[{...backup.events[0],actualTimeZone:'INVALID'},backup.events[1]]};
  await page.locator('#backup-file').setInputFiles({name:'corrupt.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(broken))});
- dialog=page.waitForEvent('dialog');await page.locator('#import-btn').click();await dialog;
+ const dialog=page.waitForEvent('dialog');await page.locator('#import-btn').click();await dialog;
  expect(await snapshot(page)).toEqual(after);
 });
 

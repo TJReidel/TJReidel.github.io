@@ -30,7 +30,7 @@ test('release update: production baseline to candidate, same origin, offline and
   const db=await new Promise((ok,no)=>{const q=indexedDB.open('pillplan-next-db');q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)});
   const out={version:db.version};
   for(const store of ['meds','events','meta'])out[store]=await new Promise((ok,no)=>{const q=db.transaction(store).objectStore(store).getAll();q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)});
-  db.close();out.localStorage={...localStorage};return out;
+  db.close();out.localStorage={...localStorage};delete out.localStorage.pillplan_last_backup_export;return out;
  });}
  async function settleWorker(cache){
   await page.evaluate(async()=>{await navigator.serviceWorker.ready;const r=await navigator.serviceWorker.getRegistration();await r.update()});
@@ -61,7 +61,7 @@ test('release update: production baseline to candidate, same origin, offline and
   const oldBackup=await exportBackup();
   root=process.cwd();
   await page.reload();
-  await settleWorker('pillplan-next-v32-historical-colours');
+  await settleWorker('pillplan-next-v33-backup-safety');
   const after=await snapshot();expect(after).toEqual(before);expect(after.version).toBe(1);
   const live=await page.evaluate(()=>fetch('/pillplan-next/core-v5.js',{cache:'no-store'}).then(r=>r.text()));
   const expected=fs.readFileSync('pillplan-next/core-v5.js','utf8');expect(live).toBe(expected);
@@ -73,8 +73,9 @@ test('release update: production baseline to candidate, same origin, offline and
   expect((await snapshot()).meds.length).toBe(before.meds.length+1);
   await page.locator('[data-v="settings"]').click();
   await page.locator('#backup-file').setInputFiles({name:'fictional-old-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(oldBackup))});
-  const importFinished=page.waitForEvent('dialog');
-  await page.locator('#import-btn').click();await importFinished;await expect.poll(snapshot).toEqual(before);
+  await page.locator('#import-btn').click();await expect(page.locator('#pp-safety-replace')).toBeDisabled();
+   const safeWait=page.waitForEvent('download');await page.locator('#pp-safety-export').click();const safe=await safeWait;
+   await page.locator('#pp-safety-file').setInputFiles(await safe.path());await page.locator('#pp-safety-replace').click();await expect(page.locator('#pp-modal')).toHaveCount(0);await expect.poll(snapshot).toEqual(before);
   await page.locator('#backup-file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{invalid')});
   const invalidFinished=page.waitForEvent('dialog');
   await page.locator('#import-btn').click();await invalidFinished;expect(await snapshot()).toEqual(before);
