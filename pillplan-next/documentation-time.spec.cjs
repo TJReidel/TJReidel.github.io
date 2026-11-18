@@ -120,3 +120,27 @@ test('first installation can reopen offline without an extra online reload',asyn
  expect(await page.locator('.dose-card').evaluate(e=>getComputedStyle(e).display)).toBe('flex');
  await context.setOffline(false);
 });
+
+test('WP03 upcoming versus unconfirmed, explicit states and legacy label consistency',async({page})=>{
+ await page.clock.install({time:new Date('2026-11-12T09:00:00Z')});
+ await page.goto('http://127.0.0.1:8765/pillplan-next/');
+ await page.evaluate(async()=>{
+  const d=today(),zone=deviceTimeZone();localStorage.setItem('pillplan_timezone',zone);
+  const current=localInZone(new Date(),zone);
+  const future=current.slice(11,16)<'23:59'?'23:59':'23:58';
+  const meds=[{id:71,name:'QA FUTURE',times:[future],startDate:d},{id:72,name:'QA OPEN',times:['00:00'],startDate:d},{id:73,name:'QA NOT TAKEN',times:['00:00'],startDate:d},{id:74,name:'QA UNKNOWN',times:['00:00'],startDate:d},{id:75,name:'QA LEGACY',times:['00:00'],startDate:d}];
+  const events=[['not_taken',73],['unknown',74],['taken',75]].map(([type,id])=>({eventId:'qa-'+id,slot:slotKey(id,d,'00:00'),type,tier:'red',createdAt:new Date().toISOString()}));
+  await importBackup({text:async()=>JSON.stringify({meds,events,meta:[]})});
+ });
+ const cards=page.locator('.dose-card');
+ await expect(cards.filter({hasText:'QA FUTURE'})).toContainText(/Noch nicht fällig|Not due yet/);
+ await expect(cards.filter({hasText:'QA OPEN'})).toContainText(/nicht bestätigt|not confirmed/i);
+ await expect(cards.filter({hasText:'QA NOT TAKEN'})).toContainText(/Nicht eingenommen|Not taken/);
+ await page.locator('[data-v="plan"]').click();
+ await expect(page.locator('[data-mid="73"].today .day-ico')).toHaveText('×');
+ await expect(page.locator('[data-mid="74"].today .day-ico')).toHaveText('?');
+ await expect(page.locator('[data-mid="71"].today .day-ico')).toHaveText('◷');
+ await page.locator('[data-v="settings"]').click();await page.locator('#report-btn').click();
+ await expect(page.locator('#pp-report-sheet')).toContainText(/Noch nicht fällig|Not due yet/);
+ await expect(page.locator('#pp-report-sheet .pp-report-status.red')).toContainText(/Einnahmezeit unbekannt|intake time unknown/);
+});

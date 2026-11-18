@@ -29,6 +29,13 @@ for(const tier of ['green','yellow','red','unrated']){
  assert.ok(!run('statusText(e)').includes('verspätet'));
 }
 assert.equal(run('eventTier(null)'),'open');
+assert.equal(run("openTiming('2026-11-12','11:00',clock)"),'upcoming');
+assert.equal(run("openTiming('2026-11-12','10:00',clock)"),'dueOpen');
+assert.equal(run("openTiming('2026-11-12','08:00',clock)"),'pastOpen');
+assert.equal(run("dayIcon('not_taken')"),'×');assert.equal(run("dayIcon('unknown')"),'?');assert.equal(run("dayIcon('upcoming')"),'◷');
+assert.ok(run("statusText({type:'taken',tier:'red'})").includes('Einnahmezeit unbekannt'));
+assert.ok(run("statusText({type:'not_taken'},'2026-11-12','11:00',clock)").includes('Nicht eingenommen'));
+assert.equal(run("eventTier({type:'undo'})"),'open');
 c.e={type:'taken',legacy:true,createdAt:'2026-11-12T09:00:00Z'};
 assert.equal(run('recordedTimeText(e)'),'Zeit unbekannt','legacy-import timestamps may be reconstructed and are not asserted recording times');
 c.e={type:'undo'};assert.equal(run('eventTier(e)'),'open');
