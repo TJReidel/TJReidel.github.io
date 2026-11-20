@@ -1,13 +1,13 @@
-const CACHE='pillplan-next-v38-entry-labels';
-const PREVIOUS_CACHE='pillplan-next-v37-intake-clarity';
+const CACHE='pillplan-next-v39-restore-selection';
+const PREVIOUS_CACHE='pillplan-next-v38-entry-labels';
 const SHELL='/pillplan-next/index.html';
 const ASSETS=[
   '/pillplan-next/',
   SHELL,
   '/pillplan-next/core-v5.js',
-  '/pillplan-next/core-v5.js?v=38-entry-labels',
+  '/pillplan-next/core-v5.js?v=39-restore-selection',
   '/pillplan-next/design-master-v4.css',
-  '/pillplan-next/design-master-v4.css?v=38-entry-labels',
+  '/pillplan-next/design-master-v4.css?v=39-restore-selection',
   '/pillplan-next/design-master.css',
   '/pillplan-next/design-master.css?v=4-privacy',
   '/pillplan-next/manifest.json',
