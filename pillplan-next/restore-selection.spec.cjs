@@ -6,7 +6,8 @@ test('restore selector remains accessible; exact safety file and unchanged recor
  await page.evaluate(async()=>{await put('meds',{id:1,name:'SYNTHETIC CURRENT',times:['08:00'],startDate:today()});await render()});
  const before=await page.evaluate(()=>backupSnapshot());
  const incoming={schema:'pillplan-next-consolidated-v7',meds:[{id:2,name:'SYNTHETIC RESTORED',times:['08:00'],startDate:'2026-01-01'}],events:[],meta:[]};
- const choose=async()=>{await page.locator('[data-v="settings"]').click();await page.locator('#backup-file').setInputFiles({name:'incoming.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(incoming))});await page.locator('#import-btn').click()};
+ await page.locator('[data-v="settings"]').click();await expect(page.locator('#backup-file')).toBeVisible();
+ const choose=async()=>{await page.locator('#backup-file').setInputFiles({name:'incoming.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(incoming))});await page.locator('#import-btn').click();await expect(page.locator('#pp-safety-file')).toBeVisible()};
  await choose();await expect(page.locator('#pp-safety-file')).toBeEnabled();await expect(page.locator('#pp-safety-replace')).toBeDisabled();
  // A selectable control does not authorize overwriting: the target is not the safety file.
  await page.locator('#pp-safety-file').setInputFiles({name:'wrong.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(incoming))});
