@@ -42,7 +42,9 @@ async function run() {
       assert.equal(r.dayRows.length,n); assert.equal(r.stats.due,n);
       assert.equal(r.stats.done,4); assert.equal(r.stats.open,n-4);
       assert.equal(r.stats.pct,Math.round(400/n));
-      for(const tier of ['green','yellow','red','unrated'])assert.equal(r.stats[tier],1);
+      assert.equal(r.stats.green,0,'legacy colours must not invent actual intake times');
+      assert.equal(r.stats.unrated,4);
+      assert.ok(r.dayRows.filter(x=>x.tier==='unrated').every(x=>x.actualTime==='Zeit unbekannt'));
       c.reportFixture=r;
       const html = vm.runInContext('reportHTML(reportFixture)',c);
       assert.ok(html.includes('Test &lt;A&gt;')); assert.ok(!html.includes('Test <A>'));
@@ -61,10 +63,6 @@ async function run() {
     r=await vm.runInContext('buildMedicationReport(30)',c); assert.equal(r.stats.due,3);
     fixture(c,[],[]);r=await vm.runInContext('buildMedicationReport(7)',c);
     assert.equal(r.stats.pct,0);assert.equal(r.dayRows.length,0);
-    for(const [minute,tier] of [[29,'green'],[30,'yellow'],[44,'yellow'],[45,'red']]) {
-      c.clock={getHours:()=>8,getMinutes:()=>minute};
-      assert.equal(vm.runInContext("computeTier('08:00',clock)",c),tier);
-    }
     // Report generation has no write path and retains existing storage schema.
     assert.equal(vm.runInContext('DB_VERSION',c),1);
     if(runtime.includes('preview')) {
@@ -73,7 +71,7 @@ async function run() {
       assert.ok(!/localStorage\.(?:getItem|setItem)\('pillplan_(?:lang|timezone)'/.test(source));
       assert.ok(!source.includes("register('/pillplan-next/sw.js'"));
     } else assert.equal(vm.runInContext('DB_NAME',c),'pillplan-next-db');
-    console.log('PASS report periods, states, undo, history, end/start, escaping, output equality, tier boundaries, storage:',runtime);
+    console.log('PASS report periods, neutral legacy states, undo, history, end/start, escaping, output equality, storage:',runtime);
   }
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});

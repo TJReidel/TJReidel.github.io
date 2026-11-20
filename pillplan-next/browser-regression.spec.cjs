@@ -1,4 +1,12 @@
 const {test,expect}=require('@playwright/test');
+async function guardedRestore(page){
+ await page.locator('#import-btn').click();
+ await expect(page.locator('#pp-safety-replace')).toBeDisabled();
+ const wait=page.waitForEvent('download');await page.locator('#pp-safety-export').click();
+ const safety=await wait;await page.locator('#pp-safety-file').setInputFiles(await safety.path());
+ await page.locator('#pp-safety-replace').click();await expect(page.locator('#pp-modal')).toHaveCount(0);
+}
+
 test('real browser smoke: document, correction, report, backup safety, offline',async({page,context})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  page.on('dialog',d=>d.accept('2'));
@@ -13,7 +21,9 @@ test('real browser smoke: document, correction, report, backup safety, offline',
  await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented/);
  await page.reload();
  await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented/);
- await page.locator('[data-toggle]').first().click();
+ await page.locator('[data-earlier]').first().click();
+ await page.locator('#pp-more-details summary').click();
+ await page.locator('#pp-corr-undo').click();
  await expect(page.locator('.dose-status').first()).not.toContainText(/Dokumentiert|Documented/);
  await page.locator('[data-v="settings"]').click();
  await page.locator('#report-btn').click();
@@ -61,7 +71,7 @@ test('extended browser: edit, valid backup roundtrip, report print and end',asyn
  expect(backup.meds.some(x=>x.name==='QA Roundtrip Edited')).toBeTruthy();
  await page.locator('#backup-file').setInputFiles({name:'valid.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
  console.log('EXTENDED_STAGE_5');
- await page.locator('#import-btn').click();
+ await guardedRestore(page);
  await page.reload();
  await page.locator('[data-v="plan"]').click();
  await expect(page.locator('body')).toContainText('QA Roundtrip Edited');
@@ -138,7 +148,7 @@ test('closure: report periods, exact print content, short and long PDF paginatio
  await page.locator('#pp-report-close').click();
  const start=new Date();start.setDate(start.getDate()-29);const ds=start.toLocaleDateString('en-CA');
  const longBackup={...backup,meds:[backup.meds[0],...Array.from({length:12},(_,i)=>({id:9000+i,name:'QA Long '+i,dose:'',times:['08:00','20:00'],startDate:ds,scheduleHistory:[{from:ds,times:['08:00','20:00']}]}))]};
- await page.locator('#backup-file').setInputFiles({name:'long.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(longBackup))});await page.locator('#import-btn').click();
+ await page.locator('#backup-file').setInputFiles({name:'long.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(longBackup))});await guardedRestore(page);
  await page.locator('#report-btn').click();await page.locator('#pp-report-period').selectOption('30');
  await expect(page.locator('#pp-report-sheet tbody tr')).toHaveCount(721);
  await verifyPdf('long-report',2);
@@ -148,7 +158,7 @@ test('closure: correction note, offline write and reopen',async({page,context})=
  page.on('dialog',d=>d.accept());await page.goto('http://127.0.0.1:8765/pillplan-next/');
  await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill('QA Offline');await page.locator('#add-med').click();
  await page.locator('[data-toggle]').click();await page.locator('[data-v="plan"]').click();await page.locator('.day-cell.today').click();
- await page.locator('#pp-corr-note').fill('QA correction');await page.locator('#pp-corr-save').click();await expect(page.locator('#pp-corr-save')).toHaveCount(0);
+ await page.locator('#pp-more-details summary').click();await page.locator('#pp-corr-note').fill('QA correction');await page.locator('#pp-corr-undo').click();await expect(page.locator('#pp-corr-save')).toHaveCount(0);
  await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();await context.setOffline(true);await page.reload();
  await page.locator('[data-toggle]').click();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
  await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
@@ -194,4 +204,58 @@ test('privacy closure: no app speech capture or automatic medication transfer, d
  expect(requests.filter(r=>r.method!=='GET'||new URL(r.url).origin!=='http://127.0.0.1:8765'||r.body||r.url.includes('FICTIONAL_PRIVACY_CANARY'))).toEqual([]);
  expect(errors).toEqual([]);
  await context.setOffline(false);
+});
+
+test('WP02 safe export, cancellation, mismatch, stale snapshot, protected restore, storage status',async({page})=>{
+ const fs=require('node:fs');
+ await page.addInitScript(()=>{let permitted=false;Object.defineProperty(navigator.storage,'persisted',{configurable:true,value:async()=>permitted});Object.defineProperty(navigator.storage,'persist',{configurable:true,value:async()=>{permitted=true;return true}})});
+ page.on('dialog',d=>d.accept());
+ await page.goto('http://127.0.0.1:8765/pillplan-next/');
+ await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill('WP02 SYNTHETIC BASE');await page.locator('#add-med').click();
+ await page.locator('[data-toggle]').first().click();await expect(page.locator('.dose-status').first()).toContainText(/Documented|Dokumentiert/);
+ const snap=()=>page.evaluate(()=>backupSnapshot()),before=await snap();expect(before.events.length).toBeGreaterThan(0);
+ await page.locator('[data-v="settings"]').click();
+ await expect(page.locator('#last-backup-export')).toContainText(/Noch kein|No export/);
+ await expect(page.locator('#persist-status')).toContainText(/Nicht gewährt|Not granted/);
+ await page.locator('#persist-btn').click();await expect(page.locator('#persist-status')).toContainText(/Vom Browser gewährt|Granted by the browser/);
+ const exported=page.waitForEvent('download');await page.locator('#export-btn').click();const external=await exported;
+ const payload=JSON.parse(fs.readFileSync(await external.path(),'utf8'));
+ for(const n of ['meds','events','meta'])expect(payload[n]).toEqual(before[n]);
+ await expect(page.locator('#last-backup-export')).not.toContainText(/Noch kein|No export/);
+ await page.reload();await page.locator('[data-v="settings"]').click();
+ await expect(page.locator('#last-backup-export')).not.toContainText(/Noch kein|No export/);
+ const incoming={...payload,meds:[{...payload.meds[0],name:'WP02 SYNTHETIC RESTORED'}]};
+ const select=()=>page.locator('#backup-file').setInputFiles({name:'incoming.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(incoming))});
+ await select();await page.locator('#import-btn').click();await expect(page.locator('#pp-safety-replace')).toBeDisabled();
+ await page.locator('#pp-safety-cancel').click();expect(await snap()).toEqual(before);
+ await select();await page.locator('#import-btn').click();
+ const wait=page.waitForEvent('download');await page.locator('#pp-safety-export').click();const saved=await wait;const exact=await saved.path();const safetyPayload=JSON.parse(fs.readFileSync(exact,'utf8'));
+ for(const n of ['meds','events','meta'])expect(safetyPayload[n]).toEqual(before[n]);
+ await page.locator('#pp-safety-file').setInputFiles({name:'wrong.json',mimeType:'application/json',buffer:Buffer.from('{}')});
+ await page.locator('#pp-safety-replace').click();
+ await expect(page.locator('#pp-safety-message')).toContainText(/entspricht nicht|does not match/);expect(await snap()).toEqual(before);
+ await page.locator('#pp-safety-file').setInputFiles(exact);
+ await page.evaluate(()=>rawPut('meta',{key:'synthetic-concurrent-change',value:true}));
+ await page.locator('#pp-safety-replace').click();await expect(page.locator('#pp-safety-message')).toContainText(/geändert|changed/);
+ expect((await snap()).meds).toEqual(before.meds);expect((await snap()).meta.some(x=>x.key==='synthetic-concurrent-change')).toBe(true);
+ await page.locator('#pp-safety-cancel').click();await select();await guardedRestore(page);
+ const restored=await snap();expect(restored.meds[0].name).toBe('WP02 SYNTHETIC RESTORED');expect(restored.events).toEqual(incoming.events);expect(restored.meta).toEqual(incoming.meta);
+ await expect(page.locator('#last-backup-export')).toContainText(/Noch kein|No export/);
+});
+
+test('WP02 empty device restore without export, unknown schema rejected, concurrent new records protected',async({page})=>{
+ page.on('dialog',d=>d.accept());await page.goto('http://127.0.0.1:8765/pillplan-next/');
+ await page.locator('[data-v="settings"]').click();
+ const incoming={schema:'pillplan-next-consolidated-v7',meds:[{id:321,name:'SYNTHETIC EMPTY RESTORE',times:['08:00']}],events:[],meta:[]};
+ const select=async data=>{await page.locator('#backup-file').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))});await page.locator('#import-btn').click()};
+ await select({...incoming,schema:'pillplan-next-consolidated-v8'});
+ await expect(page.locator('#pp-modal')).toHaveCount(0);
+ expect((await page.evaluate(()=>backupSnapshot())).meds).toHaveLength(0);
+ await select(incoming);await expect(page.locator('#pp-safety-replace')).toBeEnabled();await expect(page.locator('#pp-safety-export')).toHaveCount(0);
+ await page.evaluate(()=>rawPut('meta',{key:'new-metadata',value:1}));
+ await page.locator('#pp-safety-replace').click();await expect(page.locator('#pp-safety-message')).toContainText(/geändert|changed/);
+ await page.locator('#pp-safety-cancel').click();await select(incoming);await expect(page.locator('#pp-safety-replace')).toBeDisabled();
+ await page.locator('#pp-safety-cancel').click();await page.evaluate(()=>clear('meta'));
+ await select(incoming);await page.locator('#pp-safety-replace').click();await expect(page.locator('#pp-modal')).toHaveCount(0);
+ expect((await page.evaluate(()=>backupSnapshot())).meds).toEqual(incoming.meds);
 });

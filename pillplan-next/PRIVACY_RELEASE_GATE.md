@@ -1,5 +1,7 @@
 # PillPlan: Datenschutz- und Zweckbestimmungsgate
 
+Entwicklungsnachtrag 12.11.2026: Option A bleibt persönliche Medikationsdokumentation ohne Erinnerungen, Therapie- oder Dosierungsentscheidungen. Statusfarben zeigen Dokumentationszustände. Tatsächliche Einnahmezeiten sind freiwillige Patientenangaben und von Erfassungszeiten getrennt. Offene Einträge bedeuten nicht automatisch ausgelassene Einnahmen; Dokumentationsquote ist keine medizinische Adhärenzbewertung. Die neue Runtime ist ein isolierter Entwicklungskandidat, nicht die bereits abgenommene Geräteversion. Datenflüsse und öffentliche Freigabehürden bleiben bestehen.
+
 Stand: 10.10.2026. Gilt ausschließlich für /pillplan-next/ mit core-v5.js.
 Keine Freigabe für ältere Runtime-Dateien oder die historische Root-App.
 
