@@ -58,7 +58,7 @@ jobs:
       - name: Run isolated browser E2E
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 &
-          npx playwright test pillplan-next/browser-regression.spec.cjs pillplan-next/documentation-time.spec.cjs --reporter=line --workers=1
+          npx playwright test pillplan-next/browser-regression.spec.cjs pillplan-next/documentation-time.spec.cjs pillplan-next/restore-selection.spec.cjs --reporter=line --workers=1
       - name: Production-to-candidate update and rollback on isolated origin
         env:
           CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
