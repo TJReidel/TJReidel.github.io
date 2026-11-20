@@ -18,13 +18,13 @@ test('real browser smoke: document, correction, report, backup safety, offline',
  await page.locator('#add-med').click();
  await expect(page.locator('.dose-name').filter({hasText:'Synthetic QA Pill'})).toBeVisible();
  await page.locator('[data-toggle]').first().click();
- await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented/);
+ await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented|Eingenommen|Taken/);
  await page.reload();
- await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented/);
+ await expect(page.locator('.dose-status').first()).toContainText(/Dokumentiert|Documented|Eingenommen|Taken/);
  await page.locator('[data-earlier]').first().click();
  await page.locator('#pp-more-details summary').click();
  await page.locator('#pp-corr-undo').click();
- await expect(page.locator('.dose-status').first()).not.toContainText(/Dokumentiert|Documented/);
+ await expect(page.locator('.dose-status').first()).not.toContainText(/Dokumentiert|Documented|Eingenommen|Taken/);
  await page.locator('[data-v="settings"]').click();
  await page.locator('#report-btn').click();
  await expect(page.locator('#pp-modal')).toBeVisible();
@@ -110,7 +110,7 @@ test('closure: report periods, exact print content, short and long PDF paginatio
  await page.locator('#add-med').click();
  await expect(page.locator('.dose-name')).toHaveText('QA No Dose');
  await page.locator('[data-toggle]').click();
- await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
+ await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert|Taken|Eingenommen/);
  await page.locator('[data-v="settings"]').click();
  await expect(page.locator('#notify-btn')).toHaveCount(0);
  await expect(page.locator('body')).not.toContainText(/PillPlan reminds|PillPlan erinnert|Test notification|Benachrichtigung testen/);
@@ -160,11 +160,11 @@ test('closure: correction note, offline write and reopen',async({page,context})=
  await page.locator('[data-toggle]').click();await page.locator('[data-v="plan"]').click();await page.locator('.day-cell.today').click();
  await page.locator('#pp-more-details summary').click();await page.locator('#pp-corr-note').fill('QA correction');await page.locator('#pp-corr-undo').click();await expect(page.locator('#pp-corr-save')).toHaveCount(0);
  await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();await context.setOffline(true);await page.reload();
- await page.locator('[data-toggle]').click();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
- await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
+ await page.locator('[data-toggle]').click();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert|Taken|Eingenommen/);
+ await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert|Taken|Eingenommen/);
  const events=await page.evaluate(async()=>{const db=await new Promise(r=>{let q=indexedDB.open('pillplan-next-db');q.onsuccess=()=>r(q.result)});return new Promise(r=>{let q=db.transaction('events').objectStore('events').getAll();q.onsuccess=()=>r(q.result)})});
  expect(events).toHaveLength(3);expect(events.some(e=>e.note==='QA correction'&&e.type==='undo')).toBe(true);
- await context.setOffline(false);await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert/);
+ await context.setOffline(false);await page.reload();await expect(page.locator('.dose-status')).toContainText(/Documented|Dokumentiert|Taken|Eingenommen/);
 });
 
 test('privacy closure: no app speech capture or automatic medication transfer, data notes offline',async({page,context})=>{
@@ -212,7 +212,7 @@ test('WP02 safe export, cancellation, mismatch, stale snapshot, protected restor
  page.on('dialog',d=>d.accept());
  await page.goto('http://127.0.0.1:8765/pillplan-next/');
  await page.locator('[data-v="add"]').click();await page.locator('#med-name').fill('WP02 SYNTHETIC BASE');await page.locator('#add-med').click();
- await page.locator('[data-toggle]').first().click();await expect(page.locator('.dose-status').first()).toContainText(/Documented|Dokumentiert/);
+ await page.locator('[data-toggle]').first().click();await expect(page.locator('.dose-status').first()).toContainText(/Documented|Dokumentiert|Taken|Eingenommen/);
  const snap=()=>page.evaluate(()=>backupSnapshot()),before=await snap();expect(before.events.length).toBeGreaterThan(0);
  await page.locator('[data-v="settings"]').click();
  await expect(page.locator('#last-backup-export')).toContainText(/Noch kein|No export/);
