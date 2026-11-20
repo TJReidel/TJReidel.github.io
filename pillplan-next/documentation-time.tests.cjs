@@ -49,15 +49,14 @@ assert.equal(run('recordedTimeText(e)'),'Zeit unbekannt','legacy-import timestam
 c.e={type:'undo'};assert.equal(run('eventTier(e)'),'open');
 c.e={type:'not_taken'};assert.equal(run('eventTier(e)'),'not_taken');
 c.e={type:'unknown'};assert.equal(run('eventTier(e)'),'unknown');
-// Intake colour must ignore the recording delay; test boundaries and conservative fallback.
-for(const [actual,tier] of [['08:00','green'],['08:29','green'],['08:30','yellow'],['08:44','yellow'],['08:45','red'],['09:12','red'],['07:59','unrated']]){
- c.e={type:'taken',documentationVersion:2,plannedAtLocal:'2026-11-20T08:00',planTimeZone:'Europe/Berlin',actualTakenLocal:'2026-11-20T'+actual,actualTimeZone:'Europe/Berlin',documentedAt:'2026-11-20T08:12:00Z'};
- const before=JSON.stringify(c.e);assert.equal(run('visualTier(e)'),tier);assert.equal(JSON.stringify(c.e),before);
+// New intake entries remain green regardless of reporting/recording delay.
+for(const actual of ['08:00','09:12']){
+ c.e={type:'taken',documentationVersion:2,actualTakenLocal:'2026-11-20T'+actual,actualTimeZone:'Europe/Berlin',plannedAtLocal:'2026-11-20T08:00',documentedAt:'2026-11-20T08:12:00Z'};
+ assert.equal(run('visualTier(e)'),'green');assert.equal(run('hasHistoricalEntries({slot:e})'),false);
 }
-c.e.actualTakenLocal='2026-11-20T08:00';assert.equal(run('visualTier(e)'),'green');
-c.e.documentedAt='2026-11-21T18:00:00Z';assert.equal(run('visualTier(e)'),'green');
-c.e.actualTimeZone='UTC';assert.equal(run('visualTier(e)'),'unrated');
-c.e.actualTimeZone='Europe/Berlin';delete c.e.plannedAtLocal;assert.equal(run('visualTier(e)'),'unrated');
+assert.equal(run("hasHistoricalEntries({slot:{type:'taken',tier:'red'}})"),true);
+assert.equal(run("hasHistoricalEntries({slot:{type:'taken',documentationVersion:2}})"),false);
+assert.equal(run("hasHistoricalEntries({})"),false);
 // Sequence outranks a device clock moving backwards; a new undo supersedes old green.
 c.rows=[{eventId:'old',slot:'s',type:'taken',createdAt:'2099-01-01T00:00:00Z'},
  {eventId:'one',slot:'s',type:'taken',createdAt:'2026-11-12T09:00:00Z',sequence:1},

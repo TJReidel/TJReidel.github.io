@@ -6,7 +6,7 @@ test('historical calendar colours retained without rewriting records or rating l
  const before=await page.evaluate(async()=>{
   const d=today(),start=addDays(d,-3),m={id:42,name:'SYNTHETIC COLOUR QA',times:['08:00'],startDate:start};
   const events=['green','yellow','red'].map((tier,i)=>({eventId:'legacy-'+i,slot:slotKey(42,addDays(d,i-3),'08:00'),type:'taken',tier,createdAt:new Date().toISOString()}));
-  const date=d,stamp=new Date().toISOString();events.push({eventId:'new',slot:slotKey(42,date,'08:00'),type:'taken',tier:'red',documentationVersion:2,sequence:1,plannedAtLocal:date+'T08:00',createdAt:stamp,documentedAt:stamp,actualTakenAt:null,actualTakenLocal:date+'T08:00',planTimeZone:deviceTimeZone(),actualTimeZone:deviceTimeZone(),actualTimeSource:'reported'});
+  const date=d,stamp=new Date().toISOString();events.push({eventId:'new',slot:slotKey(42,date,'08:00'),type:'taken',tier:'red',documentationVersion:2,sequence:1,plannedAtLocal:date+'T08:00',createdAt:stamp,documentedAt:stamp,actualTakenAt:null,actualTakenLocal:date+'T00:00',actualTimeZone:deviceTimeZone(),actualTimeSource:'reported'});
   const backup={meds:[m],events,meta:[]};await importBackup({text:async()=>JSON.stringify(backup)});return await all('events');
  });
  await page.locator('[data-v="plan"]').click();
@@ -40,9 +40,7 @@ test('reported intake at 08:00, recorded at 10:00; unknown time, explicit status
  await page.screenshot({path:testInfo.outputPath('backfill-390px.png'),fullPage:true});
  await page.locator('#pp-corr-save').click();
  await expect(page.locator('#pp-modal')).toHaveCount(0);
- await expect(page.locator('.dose-status')).toContainText('Eingenommen zur Planzeit');
- await expect(page.locator('.dose-card')).toHaveClass(/done/);
- await expect(page.locator('.dose-body')).toContainText('Eintrag gespeichert am');
+ await expect(page.locator('.dose-status')).toContainText('Dokumentiert');
  await expect(page.locator('[data-toggle]')).toHaveCount(0);
  await expect(page.locator('[data-earlier]')).toHaveText('Angabe ändern');
  await expect(page.locator('.dose-status')).not.toContainText(/verspätet|Zeit eingehalten/);
@@ -69,7 +67,7 @@ test('reported intake at 08:00, recorded at 10:00; unknown time, explicit status
  await expect(page.locator('.dose-status')).toHaveText(/^(Fällig · noch nicht bestätigt|Noch nicht fällig)$/);
  await page.reload();await expect(page.locator('.dose-status')).toHaveText(/^(Fällig · noch nicht bestätigt|Noch nicht fällig)$/);
  await page.getByRole('button',{name:/Jetzt eingenommen/}).click();
- await expect(page.locator('.dose-status')).toContainText('120 Min. nach Planzeit');
+ await expect(page.locator('.dose-status')).toHaveText('Dokumentiert · eingenommen');
  rows=(await snapshot(page)).events;expect(rows).toHaveLength(6);expect(rows[5].actualTimeSource).toBe('now');
  expect(Math.abs(Date.parse(rows[5].actualTakenAt)-Date.parse(rows[5].documentedAt))).toBeLessThan(2000);
  await page.screenshot({path:testInfo.outputPath('documentation-390px.png'),fullPage:true});
@@ -165,3 +163,14 @@ test('WP03 stable due status, travel state and legend/focus retained',async({pag
  await page.locator('[data-v="settings"]').click();await page.locator('#report-btn').click();
  await expect(page.locator('#pp-report-sheet .pp-report-meta').first()).toContainText(/2026-11-12 07:0[2-9]/);
 });
+
+ test('new user sees current status legend without historical timing colours',async({page})=>{
+ await create(page,'SYNTHETIC NEW USER');
+ await page.locator('[data-toggle]').click();
+ await expect(page.locator('.dose-body')).toContainText('Eintrag gespeichert am');
+ await page.locator('[data-v="plan"]').click();
+ await page.locator('.status-legend summary').click();
+ await expect(page.locator('.status-legend')).not.toContainText('Historische Zeitbewertung');
+ await expect(page.locator('.status-legend')).not.toContainText('Frühere Bewertung');
+ await expect(page.locator('.status-legend')).toContainText('Grün – Einnahme dokumentiert');
+ });
